@@ -450,8 +450,9 @@ textarea.input{resize:vertical;min-height:80px}
 .scan-option-icon{font-size:28px;margin-bottom:8px}
 .scan-option-label{font-size:13px;font-weight:500}
 .camera-view{
-  width:100%;aspect-ratio:16/9;background:#000;
+  width:100%;max-width:360px;aspect-ratio:3/4;background:#000;
   border-radius:var(--radius-lg);overflow:hidden;position:relative;
+  margin:0 auto;
 }
 .camera-view video{width:100%;height:100%;object-fit:cover}
 .camera-overlay{
@@ -459,9 +460,18 @@ textarea.input{resize:vertical;min-height:80px}
   pointer-events:none;
 }
 .camera-frame{
-  width:200px;height:280px;border:2px solid var(--accent);
-  border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);
+  width:75%;aspect-ratio:2/3;
+  border:2px solid var(--accent);
+  border-radius:10px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,0.55);
+  position:relative;
 }
+.camera-frame::before,.camera-frame::after{
+  content:'';position:absolute;width:18px;height:18px;
+  border-color:var(--gold);border-style:solid;
+}
+.camera-frame::before{top:-2px;left:-2px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.camera-frame::after{bottom:-2px;right:-2px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
 .ai-thinking{
   display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px;
 }
@@ -1249,7 +1259,7 @@ function renderBarChart(containerId, data, colors) {
 function renderCardHTML(card) {
   const qty = card.quantidade || 1;
   const rarityClass = 'rarity-' + (card.raridade || 'common').toLowerCase().replace(/\s+/g,'_');
-  const rarityLabel = (card.raridade || 'Common').replace(/_/g,' ');
+  const rarityLabel = getRarityLabel(card.raridade);
   const imgHtml = card.imagemUrl
     ? `<img src="${card.imagemUrl}" alt="${card.nome}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`
     : `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-secondary);background:linear-gradient(135deg,var(--bg-tertiary),var(--bg-secondary))">
@@ -1272,6 +1282,23 @@ function renderCardHTML(card) {
       </div>
     </div>
   </div>`;
+}
+
+function getCondicaoLabel(c) {
+  const map = {
+    Mint:'Mint — Perfeita', NM:'NM — Quase Perfeita', LP:'LP — Levemente Jogada',
+    MP:'MP — Moderadamente Jogada', HP:'HP — Muito Jogada', Damaged:'Danificada'
+  };
+  return map[c] || c || 'NM';
+}
+
+function getRarityLabel(r) {
+  const map = {
+    common:'Comum', uncommon:'Incomum', rare:'Rara', double_rare:'Dupla Rara',
+    illustration_rare:'Rara Ilustrada', special_illustration_rare:'Rara Ilustrada Especial',
+    hyper_rare:'Hyper Rara', gold:'Gold', rainbow:'Rainbow', promo:'Promo', ace_spec:'Ace Spec'
+  };
+  return map[(r||'').toLowerCase()] || r || 'Comum';
 }
 
 function getTypeEmoji(tipo) {
@@ -1311,6 +1338,9 @@ function renderScanner() {
         <div class="camera-frame"></div>
       </div>
     </div>
+    <div style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:10px">
+      📐 Encaixe a carta dentro do quadro
+    </div>
     <div style="display:flex;gap:12px;margin-top:12px;justify-content:center">
       <button class="btn btn-primary" onclick="captureCamera()">📸 Capturar</button>
       <button class="btn btn-secondary" onclick="stopCamera()">✕ Cancelar</button>
@@ -1337,11 +1367,25 @@ function scannerSelectMode(mode) {
 
 async function startCamera() {
   try {
-    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    videoStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1080 },
+        height: { ideal: 1440 },
+        aspectRatio: { ideal: 0.75 }
+      },
+      audio: false
+    });
     document.getElementById('camera-video').srcObject = videoStream;
   } catch (e) {
-    showToast('Câmera não disponível', 'error');
-    scannerSelectMode('upload');
+    // fallback sem constraints específicas
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      document.getElementById('camera-video').srcObject = videoStream;
+    } catch (e2) {
+      showToast('Câmera não disponível', 'error');
+      scannerSelectMode('upload');
+    }
   }
 }
 
@@ -1495,7 +1539,19 @@ function renderCollection(filtered = null) {
     </div>
     <select class="input" style="max-width:160px" onchange="applyFilter('raridade',this.value)">
       <option value="">Todas raridades</option>
-      ${['common','uncommon','rare','double_rare','illustration_rare','special_illustration_rare','hyper_rare','gold','rainbow','promo','ace_spec'].map(r => `<option value="${r}" ${activeFilters.raridade===r?'selected':''}>${r.replace(/_/g,' ')}</option>`).join('')}
+      ${[
+        {v:'common',l:'Comum'},
+        {v:'uncommon',l:'Incomum'},
+        {v:'rare',l:'Rara'},
+        {v:'double_rare',l:'Dupla Rara'},
+        {v:'illustration_rare',l:'Rara Ilustrada'},
+        {v:'special_illustration_rare',l:'Rara Ilustrada Especial'},
+        {v:'hyper_rare',l:'Hyper Rara'},
+        {v:'gold',l:'Gold'},
+        {v:'rainbow',l:'Rainbow'},
+        {v:'promo',l:'Promo'},
+        {v:'ace_spec',l:'Ace Spec'},
+      ].map(r => `<option value="${r.v}" ${activeFilters.raridade===r.v?'selected':''}>${r.l}</option>`).join('')}
     </select>
     <select class="input" style="max-width:140px" onchange="applyFilter('tipo',this.value)">
       <option value="">Todos tipos</option>
@@ -1592,7 +1648,7 @@ async function openCardDetail(cardId) {
     </div>
     <div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-        <span class="rarity-badge ${rarityClass}" style="position:relative">${(card.raridade||'common').replace(/_/g,' ')}</span>
+        <span class="rarity-badge ${rarityClass}" style="position:relative">${getRarityLabel(card.raridade)}</span>
         ${card.tipo ? `<span class="type-badge type-${card.tipo.toLowerCase()}">${card.tipo}</span>` : ''}
         ${card.subtipo ? `<span style="font-size:12px;background:var(--bg-secondary);padding:3px 10px;border-radius:10px;border:1px solid var(--border)">${card.subtipo}</span>` : ''}
       </div>
@@ -1604,7 +1660,7 @@ async function openCardDetail(cardId) {
           ['Idioma', card.idioma||'-'],
           ['Ano', card.ano||'-'],
           ['Versão', card.versao||'-'],
-          ['Condição', card.condicao||'-'],
+          ['Condição', getCondicaoLabel(card.condicao)],
           ['Ilustrador', card.ilustrador||'-'],
           ['Preço Pago', card.precoPago ? 'R$ ' + card.precoPago.toFixed(2) : '-'],
           ['Preço Venda', card.precoVenda ? 'R$ ' + card.precoVenda.toFixed(2) : '-'],
@@ -1699,11 +1755,41 @@ async function duplicateCard(cardId) {
 // ===== MANUAL ADD / EDIT =====
 function openAddCardManual(prefill = {}) {
   const isEdit = !!prefill.id;
-  const raridades = ['common','uncommon','rare','double_rare','illustration_rare','special_illustration_rare','hyper_rare','gold','rainbow','promo','ace_spec'];
+  const raridades = [
+    { v:'common',              l:'Comum' },
+    { v:'uncommon',            l:'Incomum' },
+    { v:'rare',                l:'Rara' },
+    { v:'double_rare',         l:'Dupla Rara' },
+    { v:'illustration_rare',   l:'Rara Ilustrada' },
+    { v:'special_illustration_rare', l:'Rara Ilustrada Especial' },
+    { v:'hyper_rare',          l:'Hyper Rara' },
+    { v:'gold',                l:'Gold' },
+    { v:'rainbow',             l:'Rainbow' },
+    { v:'promo',               l:'Promo' },
+    { v:'ace_spec',            l:'Ace Spec' },
+  ];
   const tipos = ['Fire','Water','Grass','Electric','Psychic','Dark','Metal','Dragon','Fairy','Fighting','Colorless'];
   const idiomas = ['Português','Inglês','Japonês','Espanhol'];
-  const condicoes = ['Mint','NM','LP','MP','HP','Damaged'];
-  const versoes = ['Normal','Reverse Holo','Holo','Full Art','Alternate Art','Secret Rare','Gold','Rainbow','Illustration Rare','Promo'];
+  const condicoes = [
+    { v:'Mint',    l:'Mint — Perfeita' },
+    { v:'NM',      l:'NM — Quase Perfeita' },
+    { v:'LP',      l:'LP — Levemente Jogada' },
+    { v:'MP',      l:'MP — Moderadamente Jogada' },
+    { v:'HP',      l:'HP — Muito Jogada' },
+    { v:'Damaged', l:'Danificada' },
+  ];
+  const versoes = [
+    { v:'Normal',               l:'Normal' },
+    { v:'Reverse Holo',         l:'Reverse Holo' },
+    { v:'Holo',                 l:'Holo' },
+    { v:'Full Art',             l:'Full Art' },
+    { v:'Alternate Art',        l:'Arte Alternativa' },
+    { v:'Secret Rare',          l:'Secret Rare' },
+    { v:'Gold',                 l:'Gold' },
+    { v:'Rainbow',              l:'Rainbow' },
+    { v:'Illustration Rare',    l:'Rara Ilustrada' },
+    { v:'Promo',                l:'Promo' },
+  ];
 
   const html = `
 <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -1739,15 +1825,15 @@ function openAddCardManual(prefill = {}) {
     </div>
     <div class="form-group">
       <label class="form-label">Raridade</label>
-      <select id="f-raridade" class="input">${raridades.map(r => `<option value="${r}" ${prefill.raridade===r?'selected':''}>${r.replace(/_/g,' ')}</option>`).join('')}</select>
+      <select id="f-raridade" class="input">${raridades.map(r => `<option value="${r.v}" ${prefill.raridade===r.v?'selected':''}>${r.l}</option>`).join('')}</select>
     </div>
     <div class="form-group">
       <label class="form-label">Versão</label>
-      <select id="f-versao" class="input">${versoes.map(v => `<option ${prefill.versao===v?'selected':''}>${v}</option>`).join('')}</select>
+      <select id="f-versao" class="input">${versoes.map(v => `<option value="${v.v}" ${prefill.versao===v.v?'selected':''}>${v.l}</option>`).join('')}</select>
     </div>
     <div class="form-group">
       <label class="form-label">Condição</label>
-      <select id="f-condicao" class="input">${condicoes.map(c => `<option ${prefill.condicao===c?'selected':''}>${c}</option>`).join('')}</select>
+      <select id="f-condicao" class="input">${condicoes.map(c => `<option value="${c.v}" ${prefill.condicao===c.v?'selected':''}>${c.l}</option>`).join('')}</select>
     </div>
     <div class="form-group">
       <label class="form-label">Quantidade</label>
