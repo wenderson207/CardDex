@@ -1189,7 +1189,7 @@ function renderDashboard() {
     </div>
     <div class="stat-card" style="--card-accent:#00d4aa">
       <div class="stat-icon">💎</div>
-      <div class="stat-value">R$ ${totalValue.toFixed(0)}</div>
+      <div class="stat-value">R$ ${totalValue.toFixed(2)}</div>
       <div class="stat-label">Valor da Coleção</div>
     </div>
     <div class="stat-card" style="--card-accent:#ffb347">
@@ -1986,35 +1986,24 @@ async function saveManualCard(existingId) {
   const nome = document.getElementById('f-nome').value.trim();
   if (!nome) { showToast('Nome é obrigatório', 'error'); return; }
 
-  // Pega o arquivo do preview ou do input direto
   const imgFile = window._pendingImgFile || document.getElementById('f-imagem')?.files?.[0];
   let imagemUrl = existingId ? (collectionData.find(c=>c.id===existingId)?.imagemUrl||'') : '';
 
-  const saveBtn = document.querySelector('.modal .btn-primary');
+  // Desabilitar botão com referência local antes de qualquer await
+  const saveBtn = document.querySelector('#modal-container .btn-primary');
+  const originalText = saveBtn ? saveBtn.textContent : '';
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
-
-  if (imgFile) {
-    try {
-      showToast('Enviando imagem...', 'info');
-      const storageRef = ref(storage, `colecao/${currentUser.uid}/${Date.now()}_${imgFile.name}`);
-      await uploadBytes(storageRef, imgFile);
-      imagemUrl = await getDownloadURL(storageRef);
-    } catch (e) {
-      console.warn('Image upload failed:', e);
-      showToast('Erro no upload da imagem — carta salva sem foto', 'warning');
-    }
-  }
 
   const cardData = {
     nome,
-    numero:    document.getElementById('f-numero').value.trim(),
-    colecao:   document.getElementById('f-colecao').value.trim(),
-    idioma:    document.getElementById('f-idioma').value,
-    tipo:      document.getElementById('f-tipo').value,
-    hp:        document.getElementById('f-hp').value,
-    raridade:  document.getElementById('f-raridade').value,
-    versao:    document.getElementById('f-versao').value,
-    condicao:  document.getElementById('f-condicao').value,
+    numero:     document.getElementById('f-numero').value.trim(),
+    colecao:    document.getElementById('f-colecao').value.trim(),
+    idioma:     document.getElementById('f-idioma').value,
+    tipo:       document.getElementById('f-tipo').value,
+    hp:         document.getElementById('f-hp').value,
+    raridade:   document.getElementById('f-raridade').value,
+    versao:     document.getElementById('f-versao').value,
+    condicao:   document.getElementById('f-condicao').value,
     quantidade: parseInt(document.getElementById('f-quantidade').value) || 1,
     precoPago:  parseFloat(document.getElementById('f-precoPago').value) || 0,
     precoVenda: parseFloat(document.getElementById('f-precoVenda').value) || 0,
@@ -2024,23 +2013,44 @@ async function saveManualCard(existingId) {
   };
 
   try {
+    let savedId = existingId;
+
+    // 1. Salva a carta PRIMEIRO (sem esperar upload da imagem)
     if (existingId) {
       await updateDoc(doc(db, 'colecao', existingId), cardData);
-      showToast('✓ Carta atualizada!', 'success');
     } else {
-      await addDoc(collection(db, 'colecao'), {
+      const docRef = await addDoc(collection(db, 'colecao'), {
         ...cardData, uid: currentUser.uid, favorita: false, aVenda: false,
         historico: [{ acao: 'criado', data: new Date().toISOString(), nota: 'Adicionado manualmente' }],
         createdAt: serverTimestamp()
       });
-      showToast('✦ Carta adicionada!', 'success');
+      savedId = docRef.id;
     }
+
     window._pendingImgFile = null;
     closeModal();
+    showToast(existingId ? '✓ Carta atualizada!' : '✦ Carta adicionada!', 'success');
+
+    // 2. Faz upload da imagem em segundo plano se houver
+    if (imgFile && savedId) {
+      try {
+        showToast('Enviando foto...', 'info');
+        const storageRef = ref(storage, `colecao/${currentUser.uid}/${savedId}_${imgFile.name}`);
+        await uploadBytes(storageRef, imgFile);
+        const url = await getDownloadURL(storageRef);
+        await updateDoc(doc(db, 'colecao', savedId), { imagemUrl: url, updatedAt: serverTimestamp() });
+        showToast('📷 Foto salva!', 'success');
+      } catch (e) {
+        console.warn('Image upload failed:', e);
+        showToast('Carta salva, mas foto falhou: ' + e.message, 'warning');
+      }
+    }
+
   } catch (e) {
     console.error('Save error:', e);
     showToast('Erro ao salvar: ' + e.message, 'error');
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = existingId ? '✓ Salvar Alterações' : '✦ Adicionar à Coleção'; }
+    const btn = document.querySelector('#modal-container .btn-primary');
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
   }
 }
 
@@ -2174,7 +2184,7 @@ function renderSales() {
     </div>
     <div class="stat-card" style="--card-accent:#ffd700">
       <div class="stat-icon">💎</div>
-      <div class="stat-value">R$ ${totalAnunciado.toFixed(0)}</div>
+      <div class="stat-value">R$ ${totalAnunciado.toFixed(2)}</div>
       <div class="stat-label">Valor Anunciado</div>
     </div>
     <div class="stat-card" style="--card-accent:#ff4d6d">
@@ -2244,9 +2254,9 @@ function renderReports() {
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px">
     <div class="report-stat"><div class="report-value">${total}</div><div class="report-label">Total de Cartas</div></div>
     <div class="report-stat"><div class="report-value">${unique}</div><div class="report-label">Únicas</div></div>
-    <div class="report-stat"><div class="report-value">R$ ${investido.toFixed(0)}</div><div class="report-label">Investido</div></div>
-    <div class="report-stat"><div class="report-value">R$ ${estimado.toFixed(0)}</div><div class="report-label">Estimado</div></div>
-    <div class="report-stat"><div class="report-value" style="${lucro>=0?'':'background:linear-gradient(135deg,var(--danger),#ff8080);-webkit-background-clip:text;-webkit-text-fill-color:transparent'}">R$ ${lucro.toFixed(0)}</div><div class="report-label">Lucro/Prejuízo</div></div>
+    <div class="report-stat"><div class="report-value">R$ ${investido.toFixed(2)}</div><div class="report-label">Investido</div></div>
+    <div class="report-stat"><div class="report-value">R$ ${estimado.toFixed(2)}</div><div class="report-label">Estimado</div></div>
+    <div class="report-stat"><div class="report-value" style="${lucro>=0?'':'background:linear-gradient(135deg,var(--danger),#ff8080);-webkit-background-clip:text;-webkit-text-fill-color:transparent'}">R$ ${lucro.toFixed(2)}</div><div class="report-label">Lucro/Prejuízo</div></div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
@@ -2322,7 +2332,7 @@ function renderProfile() {
         <div style="font-size:12px;color:var(--text-secondary)">Únicas</div>
       </div>
       <div style="text-align:center">
-        <div style="font-size:24px;font-weight:800;font-family:var(--font-main);color:var(--success)">R$ ${estimado.toFixed(0)}</div>
+        <div style="font-size:24px;font-weight:800;font-family:var(--font-main);color:var(--success)">R$ ${estimado.toFixed(2)}</div>
         <div style="font-size:12px;color:var(--text-secondary)">Estimado</div>
       </div>
     </div>
