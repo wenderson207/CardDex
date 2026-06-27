@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper: user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    // Helper: user owns the document
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+    
+    // Usuarios: each user can only read/write their own profile
+    match /usuarios/{userId} {
+      allow read, write: if isAuth() && isOwner(userId);
+    }
+    
+    // Colecao: users can only CRUD their own cards
+    match /colecao/{docId} {
+      allow read: if isAuth() && isOwner(resource.data.uid);
+      allow create: if isAuth() && isOwner(request.resource.data.uid);
+      allow update, delete: if isAuth() && isOwner(resource.data.uid);
+    }
+    
+    // Wishlist: same rules
+    match /wishlist/{docId} {
+      allow read: if isAuth() && isOwner(resource.data.uid);
+      allow create: if isAuth() && isOwner(request.resource.data.uid);
+      allow update, delete: if isAuth() && isOwner(resource.data.uid);
+    }
+    
+    // Vendas: same rules
+    match /vendas/{docId} {
+      allow read: if isAuth() && isOwner(resource.data.uid);
+      allow create: if isAuth() && isOwner(request.resource.data.uid);
+      allow update, delete: if isAuth() && isOwner(resource.data.uid);
+    }
+    
+    // Scanner history: same rules
+    match /scanner/{docId} {
+      allow read: if isAuth() && isOwner(resource.data.uid);
+      allow create: if isAuth() && isOwner(request.resource.data.uid);
+      allow update, delete: if isAuth() && isOwner(resource.data.uid);
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// Storage rules
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /colecao/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

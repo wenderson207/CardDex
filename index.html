@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f0f1a">
+<meta name="description" content="CardDex — Seu Pokédex Digital de Colecionador">
+<title>CardDex — Pokédex Digital</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  --bg-primary: #0a0a14;
+  --bg-secondary: #111125;
+  --bg-tertiary: #181830;
+  --bg-card: #1a1a35;
+  --bg-glass: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --border-hover: rgba(255,255,255,0.15);
+  --text-primary: #f0f0ff;
+  --text-secondary: #9090b0;
+  --text-muted: #5050707;
+  --accent: #6c63ff;
+  --accent-hover: #8079ff;
+  --accent-glow: rgba(108,99,255,0.3);
+  --gold: #ffd700;
+  --gold-glow: rgba(255,215,0,0.3);
+  --success: #00d4aa;
+  --danger: #ff4d6d;
+  --warning: #ffb347;
+  --info: #4db8ff;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --shadow-glow: 0 0 40px rgba(108,99,255,0.15);
+  --transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  --font-main: 'Space Grotesk', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  font-family:var(--font-body);
+  min-height:100vh;
+  overflow-x:hidden;
+  line-height:1.6;
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg-secondary)}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+
+/* ====== UTILITIES ====== */
+.hidden{display:none!important}
+.flex{display:flex}
+.flex-col{flex-direction:column}
+.items-center{align-items:center}
+.justify-center{justify-content:center}
+.justify-between{justify-content:space-between}
+.gap-1{gap:4px}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}.gap-6{gap:24px}
+.w-full{width:100%}
+.text-sm{font-size:13px}
+.text-xs{font-size:11px}
+.text-lg{font-size:18px}
+.text-xl{font-size:22px}
+.font-bold{font-weight:700}
+.font-medium{font-weight:500}
+.text-accent{color:var(--accent)}
+.text-gold{color:var(--gold)}
+.text-success{color:var(--success)}
+.text-danger{color:var(--danger)}
+.text-muted{color:var(--text-secondary)}
+.rounded{border-radius:var(--radius-md)}
+.rounded-lg{border-radius:var(--radius-lg)}
+.p-4{padding:16px}
+
+/* ====== GLASS CARD ====== */
+.glass-card{
+  background:var(--bg-glass);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  backdrop-filter:blur(20px);
+  transition:var(--transition);
+}
+.glass-card:hover{
+  border-color:var(--border-hover);
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* ====== BUTTONS ====== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 20px;border-radius:var(--radius-md);border:none;cursor:pointer;
+  font-family:var(--font-body);font-size:14px;font-weight:500;
+  transition:var(--transition);text-decoration:none;white-space:nowrap;
+}
+.btn-primary{
+  background:var(--accent);color:#fff;
+  box-shadow:0 4px 20px var(--accent-glow);
+}
+.btn-primary:hover{background:var(--accent-hover);transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0)}
+.btn-secondary{
+  background:var(--bg-glass);color:var(--text-primary);
+  border:1px solid var(--border);
+}
+.btn-secondary:hover{background:var(--bg-card);border-color:var(--border-hover)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{opacity:0.85}
+.btn-icon{padding:8px;border-radius:var(--radius-sm);background:var(--bg-glass);border:1px solid var(--border);cursor:pointer;color:var(--text-secondary);transition:var(--transition)}
+.btn-icon:hover{color:var(--text-primary);border-color:var(--border-hover)}
+.btn-sm{padding:6px 14px;font-size:13px}
+.btn-lg{padding:14px 28px;font-size:16px}
+
+/* ====== INPUTS ====== */
+.input{
+  width:100%;padding:10px 14px;
+  background:var(--bg-glass);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  color:var(--text-primary);
+  font-family:var(--font-body);font-size:14px;
+  transition:var(--transition);outline:none;
+}
+.input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.input::placeholder{color:var(--text-secondary)}
+select.input{cursor:pointer}
+textarea.input{resize:vertical;min-height:80px}
+
+/* ====== LOADING ====== */
+#loading-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg-primary);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:24px;
+}
+.loader-logo{
+  font-family:var(--font-main);font-size:48px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:pulse 1.5s ease-in-out infinite;
+}
+.loader-bar{
+  width:200px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;
+}
+.loader-bar-inner{
+  height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));
+  border-radius:2px;animation:load-bar 1.5s ease-in-out infinite;
+}
+@keyframes load-bar{0%{width:0;transform:translateX(0)}50%{width:80%}100%{width:100%;transform:translateX(100%)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes slide-in-right{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slide-in-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+@keyframes card-flip{0%{transform:perspective(1000px) rotateY(90deg);opacity:0}100%{transform:perspective(1000px) rotateY(0deg);opacity:1}}
+@keyframes holographic{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+@keyframes gold-shine{
+  0%{background-position:-200% center}
+  100%{background-position:200% center}
+}
+@keyframes rainbow-shift{
+  0%{filter:hue-rotate(0deg)}
+  100%{filter:hue-rotate(360deg)}
+}
+@keyframes particles{
+  0%{transform:translateY(0) scale(1);opacity:1}
+  100%{transform:translateY(-40px) scale(0);opacity:0}
+}
+
+/* ====== AUTH PAGE ====== */
+#auth-page{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:20px;position:relative;overflow:hidden;
+}
+.auth-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 20% 50%, rgba(108,99,255,0.15) 0%, transparent 60%),
+             radial-gradient(ellipse at 80% 20%, rgba(255,215,0,0.1) 0%, transparent 50%),
+             radial-gradient(ellipse at 60% 80%, rgba(0,212,170,0.08) 0%, transparent 50%);
+}
+.auth-card{
+  width:100%;max-width:420px;position:relative;z-index:1;
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  padding:40px;
+  box-shadow:0 40px 80px rgba(0,0,0,0.5),var(--shadow-glow);
+  animation:slide-in-up 0.5s ease;
+}
+.auth-logo{
+  text-align:center;margin-bottom:32px;
+}
+.auth-logo-text{
+  font-family:var(--font-main);font-size:36px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.auth-logo-sub{font-size:13px;color:var(--text-secondary);margin-top:4px}
+.auth-tabs{display:flex;gap:4px;background:var(--bg-secondary);border-radius:var(--radius-md);padding:4px;margin-bottom:24px}
+.auth-tab{flex:1;padding:8px;text-align:center;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:500;color:var(--text-secondary);transition:var(--transition);border:none;background:none}
+.auth-tab.active{background:var(--accent);color:#fff}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:13px;font-weight:500;color:var(--text-secondary);margin-bottom:6px}
+.input-group{position:relative}
+.input-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:16px}
+.input-group .input{padding-left:38px}
+.auth-forgot{
+  text-align:right;margin-top:-8px;margin-bottom:16px;
+}
+.auth-forgot a{font-size:12px;color:var(--accent);text-decoration:none}
+.auth-footer{margin-top:24px;text-align:center;font-size:13px;color:var(--text-secondary)}
+.auth-floating{
+  position:absolute;font-size:48px;opacity:0.1;animation:float 3s ease-in-out infinite;
+}
+
+/* ====== APP SHELL ====== */
+#app{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{
+  width:240px;background:var(--bg-secondary);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;left:0;bottom:0;
+  z-index:100;transition:transform 0.3s ease;overflow-y:auto;
+}
+.sidebar-logo{
+  padding:24px 20px 16px;
+  font-family:var(--font-main);font-size:22px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.sidebar-user{
+  padding:12px 20px;margin:0 12px;
+  background:var(--bg-glass);border:1px solid var(--border);
+  border-radius:var(--radius-md);margin-bottom:16px;
+}
+.user-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--gold));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;color:#fff;flex-shrink:0;
+}
+.user-name{font-size:13px;font-weight:600;color:var(--text-primary)}
+.user-role{font-size:11px;color:var(--text-secondary)}
+.nav-section{padding:8px 12px;font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.8px;margin-top:8px}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 20px;margin:2px 8px;
+  border-radius:var(--radius-md);cursor:pointer;
+  font-size:14px;font-weight:500;color:var(--text-secondary);
+  transition:var(--transition);border:none;background:none;width:calc(100% - 16px);
+  text-align:left;
+}
+.nav-item:hover{background:var(--bg-glass);color:var(--text-primary)}
+.nav-item.active{background:rgba(108,99,255,0.15);color:var(--accent)}
+.nav-item.active svg,.nav-item.active .nav-icon{color:var(--accent)}
+.nav-icon{font-size:18px;flex-shrink:0}
+.nav-badge{
+  margin-left:auto;background:var(--accent);color:#fff;
+  font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;
+}
+.sidebar-footer{margin-top:auto;padding:16px;border-top:1px solid var(--border)}
+
+/* Main content */
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{
+  position:sticky;top:0;z-index:50;
+  background:rgba(10,10,20,0.8);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:12px 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.topbar-title{font-family:var(--font-main);font-size:18px;font-weight:700}
+.topbar-search{
+  flex:1;max-width:400px;position:relative;
+}
+.topbar-search input{padding-left:38px}
+.topbar-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-secondary)}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.content{padding:24px;flex:1}
+.page{animation:fade-in 0.3s ease}
+
+/* ====== DASHBOARD ====== */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:16px;margin-bottom:24px;
+}
+.stat-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:20px;
+  transition:var(--transition);position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--card-accent,var(--accent));
+}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--border-hover);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.stat-icon{
+  width:40px;height:40px;border-radius:var(--radius-sm);
+  background:rgba(108,99,255,0.1);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin-bottom:12px;
+}
+.stat-value{font-family:var(--font-main);font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.2}
+.stat-label{font-size:12px;color:var(--text-secondary);margin-top:4px;font-weight:500}
+.stat-change{font-size:12px;margin-top:8px;display:flex;align-items:center;gap:4px}
+.stat-change.up{color:var(--success)}
+.stat-change.down{color:var(--danger)}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-family:var(--font-main);font-size:16px;font-weight:700}
+
+/* ====== POKEMON CARDS ====== */
+.cards-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:16px;
+}
+.poke-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;
+  transition:var(--transition);position:relative;
+  animation:card-flip 0.4s ease;
+}
+.poke-card:hover{
+  transform:translateY(-4px) scale(1.02);
+  border-color:var(--border-hover);
+  box-shadow:0 16px 40px rgba(0,0,0,0.4);
+}
+.poke-card-img{
+  width:100%;aspect-ratio:2/3;object-fit:cover;
+  background:linear-gradient(135deg,var(--bg-tertiary),var(--bg-secondary));
+  display:flex;align-items:center;justify-content:center;position:relative;
+  overflow:hidden;
+}
+.poke-card-placeholder{
+  width:100%;aspect-ratio:2/3;
+  background:linear-gradient(135deg,var(--bg-tertiary),var(--bg-secondary));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;color:var(--text-secondary);
+}
+.poke-card-info{padding:10px}
+.poke-card-name{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.poke-card-meta{display:flex;align-items:center;justify-content:space-between}
+.poke-card-num{font-size:11px;color:var(--text-secondary)}
+.poke-card-qty{
+  font-size:11px;font-weight:700;
+  background:var(--accent);color:#fff;
+  padding:2px 7px;border-radius:10px;
+}
+.rarity-badge{
+  position:absolute;top:8px;right:8px;
+  font-size:10px;font-weight:700;padding:3px 8px;
+  border-radius:10px;letter-spacing:0.5px;
+}
+.rarity-common{background:rgba(120,120,130,0.8);color:#e0e0e8}
+.rarity-uncommon{background:rgba(50,200,100,0.8);color:#d0ffe0}
+.rarity-rare{background:rgba(50,100,255,0.8);color:#d0d8ff}
+.rarity-double_rare{background:rgba(150,50,255,0.8);color:#ead0ff}
+.rarity-illustration_rare{background:rgba(255,120,50,0.8);color:#fff0d0}
+.rarity-special_illustration_rare{
+  background:linear-gradient(135deg,rgba(200,50,50,0.8),rgba(255,50,100,0.8));
+  color:#ffe0e8;animation:holographic 3s ease infinite;background-size:300% 300%;
+}
+.rarity-hyper_rare,.rarity-gold{
+  background:linear-gradient(135deg,rgba(180,140,0,0.9),rgba(255,220,50,0.9));
+  color:#3a2800;
+  animation:gold-shine 2s linear infinite;
+  background-size:300% auto;
+}
+.rarity-rainbow{
+  background:linear-gradient(135deg,#ff6b6b,#ffa64d,#ffff66,#66ff66,#66ffff,#6666ff,#ff66ff);
+  color:#fff;animation:rainbow-shift 3s linear infinite;
+  text-shadow:0 1px 2px rgba(0,0,0,0.5);
+}
+.rarity-promo{background:rgba(50,150,255,0.8);color:#d0e8ff}
+.rarity-ace_spec{background:rgba(220,50,180,0.8);color:#ffe0f8}
+.favorite-star{
+  position:absolute;top:8px;left:8px;
+  background:rgba(0,0,0,0.5);border-radius:50%;width:26px;height:26px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;transition:var(--transition);
+}
+.favorite-star:hover{transform:scale(1.2)}
+.sale-tag{
+  position:absolute;bottom:8px;left:8px;
+  background:rgba(0,212,100,0.85);color:#003a18;
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;
+}
+.holographic-overlay{
+  position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,0),rgba(255,255,255,0.05),rgba(255,255,255,0));
+  opacity:0;transition:opacity 0.3s;
+}
+.poke-card:hover .holographic-overlay{opacity:1}
+
+/* ====== SCANNER ====== */
+.scanner-zone{
+  border:2px dashed var(--border);border-radius:var(--radius-xl);
+  padding:60px 40px;text-align:center;cursor:pointer;
+  transition:var(--transition);position:relative;overflow:hidden;
+}
+.scanner-zone.dragging{
+  border-color:var(--accent);
+  background:rgba(108,99,255,0.05);
+}
+.scanner-zone:hover{border-color:var(--border-hover)}
+.scanner-icon{font-size:64px;margin-bottom:16px;animation:float 3s ease-in-out infinite}
+.scanner-title{font-family:var(--font-main);font-size:20px;font-weight:700;margin-bottom:8px}
+.scanner-sub{font-size:14px;color:var(--text-secondary)}
+.scan-preview{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px;margin-top:24px;
+}
+.scan-result{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px;margin-top:24px;
+  animation:slide-in-up 0.4s ease;
+}
+.confidence-bar{
+  height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden;margin-top:8px;
+}
+.confidence-fill{
+  height:100%;border-radius:3px;transition:width 1s ease;
+  background:linear-gradient(90deg,var(--danger),var(--warning),var(--success));
+}
+.scan-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;
+}
+.scan-field{background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px}
+.scan-field-label{font-size:11px;color:var(--text-secondary);margin-bottom:4px;font-weight:500}
+.scan-field-value{font-size:14px;font-weight:600}
+.scanner-options{display:flex;gap:12px;margin-bottom:24px}
+.scan-option{
+  flex:1;padding:16px;background:var(--bg-card);
+  border:1px solid var(--border);border-radius:var(--radius-lg);
+  cursor:pointer;text-align:center;transition:var(--transition);
+}
+.scan-option:hover{border-color:var(--accent);background:rgba(108,99,255,0.05)}
+.scan-option-icon{font-size:28px;margin-bottom:8px}
+.scan-option-label{font-size:13px;font-weight:500}
+.camera-view{
+  width:100%;aspect-ratio:16/9;background:#000;
+  border-radius:var(--radius-lg);overflow:hidden;position:relative;
+}
+.camera-view video{width:100%;height:100%;object-fit:cover}
+.camera-overlay{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+}
+.camera-frame{
+  width:200px;height:280px;border:2px solid var(--accent);
+  border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);
+}
+.ai-thinking{
+  display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px;
+}
+.ai-spinner{
+  width:60px;height:60px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+.ai-text{font-size:14px;color:var(--text-secondary);animation:pulse 1s ease-in-out infinite}
+
+/* ====== MODAL ====== */
+.modal-overlay{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:fade-in 0.2s ease;
+}
+.modal{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-xl);padding:32px;
+  width:100%;max-width:600px;max-height:90vh;overflow-y:auto;
+  animation:slide-in-up 0.3s ease;
+  box-shadow:0 40px 80px rgba(0,0,0,0.5);
+}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.modal-title{font-family:var(--font-main);font-size:20px;font-weight:700}
+.modal-close{
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  background:var(--bg-glass);border:1px solid var(--border);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  color:var(--text-secondary);font-size:18px;transition:var(--transition);
+}
+.modal-close:hover{color:var(--text-primary);border-color:var(--border-hover)}
+.modal-footer{margin-top:24px;display:flex;gap:12px;justify-content:flex-end}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* ====== CARD DETAIL ====== */
+.card-detail{
+  display:grid;grid-template-columns:300px 1fr;gap:24px;
+}
+.card-detail-img{
+  background:var(--bg-secondary);border-radius:var(--radius-lg);
+  overflow:hidden;aspect-ratio:2/3;position:relative;
+}
+.card-detail-img img{width:100%;height:100%;object-fit:cover}
+.card-detail-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.card-qty-controls{display:flex;align-items:center;gap:8px;margin-top:8px}
+.qty-btn{
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  background:var(--bg-glass);border:1px solid var(--border);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  color:var(--text-primary);font-size:18px;font-weight:700;transition:var(--transition);
+}
+.qty-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.qty-display{font-size:20px;font-weight:700;min-width:40px;text-align:center}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.info-item{background:var(--bg-secondary);border-radius:var(--radius-md);padding:12px}
+.info-label{font-size:11px;color:var(--text-secondary);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.info-value{font-size:14px;font-weight:500}
+.history-list{margin-top:16px}
+.history-item{
+  display:flex;align-items:center;gap:12px;padding:10px 0;
+  border-bottom:1px solid var(--border);
+}
+.history-icon{
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+}
+.history-text{font-size:13px;color:var(--text-secondary)}
+.history-date{font-size:11px;color:var(--text-secondary);margin-left:auto}
+
+/* ====== WISHLIST ====== */
+.wishlist-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:16px;
+  display:flex;align-items:center;gap:16px;transition:var(--transition);
+}
+.wishlist-card:hover{border-color:var(--border-hover)}
+.wishlist-priority{
+  width:8px;height:40px;border-radius:4px;flex-shrink:0;
+}
+.priority-high{background:var(--danger)}
+.priority-medium{background:var(--warning)}
+.priority-low{background:var(--success)}
+.wishlist-info{flex:1;min-width:0}
+.wishlist-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.wishlist-meta{font-size:12px;color:var(--text-secondary)}
+
+/* ====== SALES ====== */
+.sale-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:20px;transition:var(--transition);
+}
+.sale-status{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 10px;
+  border-radius:10px;font-size:12px;font-weight:600;margin-bottom:12px;
+}
+.status-available{background:rgba(0,212,170,0.1);color:var(--success)}
+.status-reserved{background:rgba(255,179,71,0.1);color:var(--warning)}
+.status-sold{background:rgba(255,77,109,0.1);color:var(--danger)}
+.sale-prices{display:flex;gap:16px;margin-top:12px}
+.price-item{flex:1;background:var(--bg-secondary);border-radius:var(--radius-md);padding:10px;text-align:center}
+.price-label{font-size:11px;color:var(--text-secondary);margin-bottom:4px}
+.price-value{font-size:16px;font-weight:700}
+.price-value.profit{color:var(--success)}
+
+/* ====== CHARTS ====== */
+.chart-container{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:20px;
+}
+.chart-bar{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:8px}
+.bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%}
+.bar-fill{
+  width:100%;border-radius:4px 4px 0 0;background:var(--accent);
+  transition:height 1s cubic-bezier(0.4,0,0.2,1);min-height:4px;
+}
+.bar-label{font-size:9px;color:var(--text-secondary);text-align:center;word-break:break-all}
+.bar-val{font-size:10px;font-weight:600;color:var(--text-primary)}
+.donut-chart{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.donut-center{position:absolute;text-align:center}
+
+/* ====== FILTERS ====== */
+.filters-bar{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:16px;margin-bottom:16px;
+  display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+}
+.filter-chip{
+  padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;
+  background:var(--bg-secondary);border:1px solid var(--border);
+  cursor:pointer;transition:var(--transition);color:var(--text-secondary);
+}
+.filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.filter-chip:hover{border-color:var(--border-hover);color:var(--text-primary)}
+
+/* ====== TOAST ====== */
+#toast-container{
+  position:fixed;bottom:24px;right:24px;z-index:9999;
+  display:flex;flex-direction:column;gap:8px;
+}
+.toast{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-md);padding:12px 16px;
+  display:flex;align-items:center;gap:10px;
+  min-width:280px;max-width:360px;
+  animation:slide-in-right 0.3s ease;
+  box-shadow:0 8px 32px rgba(0,0,0,0.3);
+}
+.toast.success{border-left:3px solid var(--success)}
+.toast.error{border-left:3px solid var(--danger)}
+.toast.info{border-left:3px solid var(--info)}
+.toast.warning{border-left:3px solid var(--warning)}
+.toast-icon{font-size:18px;flex-shrink:0}
+.toast-msg{font-size:13px;flex:1}
+
+/* ====== SKELETON ====== */
+.skeleton{
+  background:linear-gradient(90deg,var(--bg-secondary) 25%,var(--bg-tertiary) 50%,var(--bg-secondary) 75%);
+  background-size:200% auto;animation:shimmer 1.5s linear infinite;
+  border-radius:var(--radius-sm);
+}
+
+/* ====== EMPTY STATE ====== */
+.empty-state{
+  text-align:center;padding:80px 40px;
+  animation:fade-in 0.5s ease;
+}
+.empty-icon{font-size:64px;margin-bottom:16px;opacity:0.3;animation:float 3s ease-in-out infinite}
+.empty-title{font-size:18px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)}
+.empty-sub{font-size:14px;color:var(--text-secondary);max-width:300px;margin:0 auto 24px}
+
+/* ====== PROGRESS ====== */
+.progress-bar{height:6px;background:var(--bg-secondary);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:var(--accent);transition:width 0.8s ease}
+
+/* ====== MOBILE RESPONSIVE ====== */
+.mobile-menu-btn{display:none;position:fixed;bottom:20px;right:20px;z-index:200;
+  width:48px;height:48px;border-radius:50%;background:var(--accent);
+  border:none;cursor:pointer;color:#fff;font-size:22px;
+  box-shadow:0 4px 20px var(--accent-glow);
+}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .mobile-menu-btn{display:flex;align-items:center;justify-content:center}
+  .cards-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid,.form-grid-3{grid-template-columns:1fr}
+  .card-detail{grid-template-columns:1fr}
+  .scan-grid{grid-template-columns:1fr}
+  .content{padding:16px}
+  .topbar{padding:10px 16px}
+}
+
+/* ====== REPORTS ====== */
+.report-stat{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:20px;text-align:center;
+}
+.report-value{font-size:32px;font-weight:800;font-family:var(--font-main);
+  background:linear-gradient(135deg,var(--accent),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.report-label{font-size:13px;color:var(--text-secondary);margin-top:4px}
+
+/* Type colors */
+.type-fire{background:rgba(255,80,50,0.15);color:#ff6b50;border:1px solid rgba(255,80,50,0.3)}
+.type-water{background:rgba(50,150,255,0.15);color:#4d9fff;border:1px solid rgba(50,150,255,0.3)}
+.type-grass{background:rgba(50,200,80,0.15);color:#4dc866;border:1px solid rgba(50,200,80,0.3)}
+.type-electric{background:rgba(255,200,50,0.15);color:#ffc832;border:1px solid rgba(255,200,50,0.3)}
+.type-psychic{background:rgba(200,50,200,0.15);color:#c832c8;border:1px solid rgba(200,50,200,0.3)}
+.type-dark{background:rgba(80,50,30,0.15);color:#a07850;border:1px solid rgba(80,50,30,0.3)}
+.type-metal{background:rgba(150,150,180,0.15);color:#9696b4;border:1px solid rgba(150,150,180,0.3)}
+.type-dragon{background:rgba(100,50,200,0.15);color:#7832c8;border:1px solid rgba(100,50,200,0.3)}
+.type-fairy{background:rgba(255,150,200,0.15);color:#ff96c8;border:1px solid rgba(255,150,200,0.3)}
+.type-fighting{background:rgba(200,80,50,0.15);color:#c85032;border:1px solid rgba(200,80,50,0.3)}
+.type-colorless{background:rgba(180,180,180,0.1);color:#aaa;border:1px solid rgba(180,180,180,0.2)}
+.type-badge{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div id="loading-screen">
+  <div class="loader-logo">CardDex</div>
+  <div style="font-size:13px;color:var(--text-secondary)">Carregando seu universo...</div>
+  <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+</div>
+
+<!-- AUTH PAGE -->
+<div id="auth-page" class="hidden">
+  <div class="auth-bg"></div>
+  <div class="auth-floating" style="top:10%;left:5%;animation-delay:0s">✦</div>
+  <div class="auth-floating" style="top:30%;right:8%;animation-delay:0.8s;font-size:32px">◆</div>
+  <div class="auth-floating" style="bottom:20%;left:10%;animation-delay:1.6s;font-size:24px">★</div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-text">CardDex</div>
+      <div class="auth-logo-sub">Seu Pokédex Digital de Colecionador</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Cadastrar</button>
+    </div>
+    <!-- Login Form -->
+    <div id="login-form">
+      <div class="form-group">
+        <label class="form-label">Telefone</label>
+        <div class="input-group">
+          <span class="input-icon">📱</span>
+          <input type="tel" id="login-phone" class="input" placeholder="+55 11 99999-9999">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <div class="input-group">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="login-password" class="input" placeholder="Sua senha">
+        </div>
+      </div>
+      <div class="auth-forgot"><a href="#" onclick="showRecovery()">Esqueceu a senha?</a></div>
+      <button class="btn btn-primary w-full btn-lg" onclick="doLogin()">
+        <span>✦</span> Entrar na Coleção
+      </button>
+      <div class="auth-footer">
+        Ou entre rapidamente:
+        <button class="btn btn-secondary w-full" style="margin-top:10px" onclick="doLoginGoogle()">
+          🌐 Continuar com Google
+        </button>
+      </div>
+    </div>
+    <!-- Register Form -->
+    <div id="register-form" class="hidden">
+      <div class="form-group">
+        <label class="form-label">Nome de Usuário</label>
+        <div class="input-group">
+          <span class="input-icon">👤</span>
+          <input type="text" id="reg-name" class="input" placeholder="Seu nome de colecionador">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telefone</label>
+        <div class="input-group">
+          <span class="input-icon">📱</span>
+          <input type="tel" id="reg-phone" class="input" placeholder="+55 11 99999-9999">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email (opcional)</label>
+        <div class="input-group">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="reg-email" class="input" placeholder="seu@email.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <div class="input-group">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="reg-password" class="input" placeholder="Mínimo 6 caracteres">
+        </div>
+      </div>
+      <button class="btn btn-primary w-full btn-lg" onclick="doRegister()">
+        <span>◆</span> Criar Conta
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">◆ CardDex</div>
+    <div class="sidebar-user">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="user-avatar" id="user-avatar">CD</div>
+        <div>
+          <div class="user-name" id="user-name">Colecionador</div>
+          <div class="user-role">Trainer</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-section">Principal</div>
+    <button class="nav-item active" onclick="navigate('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </button>
+    <button class="nav-item" onclick="navigate('scanner')">
+      <span class="nav-icon">📷</span> Scanner IA
+      <span class="nav-badge">IA</span>
+    </button>
+    <button class="nav-item" onclick="navigate('collection')">
+      <span class="nav-icon">🃏</span> Minha Coleção
+      <span class="nav-badge" id="nav-collection-count">0</span>
+    </button>
+    <div class="nav-section">Gerenciar</div>
+    <button class="nav-item" onclick="navigate('wishlist')">
+      <span class="nav-icon">⭐</span> Wishlist
+      <span class="nav-badge" id="nav-wishlist-count">0</span>
+    </button>
+    <button class="nav-item" onclick="navigate('sales')">
+      <span class="nav-icon">💰</span> À Venda
+    </button>
+    <button class="nav-item" onclick="navigate('reports')">
+      <span class="nav-icon">📈</span> Relatórios
+    </button>
+    <div class="nav-section">Conta</div>
+    <button class="nav-item" onclick="navigate('profile')">
+      <span class="nav-icon">👤</span> Perfil
+    </button>
+    <button class="nav-item" onclick="navigate('settings')">
+      <span class="nav-icon">⚙️</span> Configurações
+    </button>
+    <div class="sidebar-footer">
+      <button class="btn btn-secondary w-full" style="font-size:13px" onclick="doLogout()">
+        🚪 Sair
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main">
+    <header class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn-icon" onclick="toggleSidebar()" style="display:none" id="mobile-menu-topbar">☰</button>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+      </div>
+      <div class="topbar-search">
+        <span class="topbar-search-icon">🔍</span>
+        <input type="text" class="input" id="global-search" placeholder="Buscar cartas..." oninput="globalSearch(this.value)">
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-primary btn-sm" onclick="navigate('scanner')">
+          📷 Escanear
+        </button>
+        <button class="btn-icon" title="Notificações">🔔</button>
+      </div>
+    </header>
+    <main class="content" id="page-content">
+      <!-- Pages rendered here -->
+    </main>
+  </div>
+</div>
+
+<!-- Mobile menu button -->
+<button class="mobile-menu-btn" onclick="toggleSidebar()" id="mobile-menu-fab">☰</button>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Modal container -->
+<div id="modal-container"></div>
+
+<!-- Firebase + App JS -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, updateProfile } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, getDoc, setDoc, increment, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
+
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+  apiKey: "AIzaSyA8pCxi_DbzMh3nKZP7x2uzul2YMXLLv9k",
+  authDomain: "carddex-br.firebaseapp.com",
+  projectId: "carddex-br",
+  storageBucket: "carddex-br.firebasestorage.app",
+  messagingSenderId: "958568553030",
+  appId: "1:958568553030:web:f13c336ab773db41698847",
+  measurementId: "G-PR8VKEWTK4"
+};
+const GEMINI_KEY = "AIzaSyAb8RN6IQpWyGQTPe1E8Jc62Mb9gsIiSsqQYu0C4gX0iStTjSEw";
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const googleProvider = new GoogleAuthProvider();
+
+// ===== STATE =====
+let currentUser = null;
+let currentPage = 'dashboard';
+let collectionData = [];
+let wishlistData = [];
+let salesData = [];
+let scannerMode = 'upload';
+let videoStream = null;
+let searchTimeout = null;
+let unsubscribeCollection = null;
+
+// ===== EXPOSE GLOBALS =====
+window.navigate = navigate;
+window.switchAuthTab = switchAuthTab;
+window.doLogin = doLogin;
+window.doRegister = doRegister;
+window.doLogout = doLogout;
+window.doLoginGoogle = doLoginGoogle;
+window.showRecovery = showRecovery;
+window.toggleSidebar = toggleSidebar;
+window.globalSearch = globalSearch;
+window.scannerSelectMode = scannerSelectMode;
+window.handleFileUpload = handleFileUpload;
+window.startCamera = startCamera;
+window.captureCamera = captureCamera;
+window.stopCamera = stopCamera;
+window.confirmScan = confirmScan;
+window.rejectScan = rejectScan;
+window.openCardDetail = openCardDetail;
+window.closeModal = closeModal;
+window.deleteCard = deleteCard;
+window.toggleFavorite = toggleFavorite;
+window.toggleSale = toggleSale;
+window.updateQuantity = updateQuantity;
+window.addToWishlist = addToWishlist;
+window.removeFromWishlist = removeFromWishlist;
+window.markWishlistFound = markWishlistFound;
+window.updateSaleStatus = updateSaleStatus;
+window.exportCollection = exportCollection;
+window.openAddCardManual = openAddCardManual;
+window.saveManualCard = saveManualCard;
+window.editCard = editCard;
+window.duplicateCard = duplicateCard;
+window.applyFilter = applyFilter;
+window.openAddWishlist = openAddWishlist;
+window.saveWishlist = saveWishlist;
+
+// ===== AUTH =====
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.auth-tab')[tab === 'login' ? 0 : 1].classList.add('active');
+  document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('register-form').classList.toggle('hidden', tab !== 'register');
+}
+
+async function doLogin() {
+  const phone = document.getElementById('login-phone').value.trim();
+  const pass = document.getElementById('login-password').value;
+  if (!phone || !pass) { showToast('Preencha todos os campos', 'error'); return; }
+  // Use phone as email prefix for Firebase Auth
+  const email = phone.replace(/\D/g, '') + '@carddex.app';
+  try {
+    showToast('Entrando...', 'info');
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    showToast(getAuthError(e.code), 'error');
+  }
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const emailInput = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-password').value;
+  if (!name || !phone || !pass) { showToast('Preencha todos os campos', 'error'); return; }
+  if (pass.length < 6) { showToast('Senha deve ter pelo menos 6 caracteres', 'error'); return; }
+  const email = emailInput || phone.replace(/\D/g, '') + '@carddex.app';
+  try {
+    showToast('Criando conta...', 'info');
+    const uc = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(uc.user, { displayName: name });
+    await setDoc(doc(db, 'usuarios', uc.user.uid), {
+      uid: uc.user.uid, name, phone, email, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    showToast('Conta criada! Bem-vindo!', 'success');
+  } catch (e) {
+    showToast(getAuthError(e.code), 'error');
+  }
+}
+
+async function doLoginGoogle() {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    const u = result.user;
+    await setDoc(doc(db, 'usuarios', u.uid), {
+      uid: u.uid, name: u.displayName, email: u.email, photo: u.photoURL,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (e) { showToast('Erro ao entrar com Google', 'error'); }
+}
+
+async function doLogout() {
+  if (unsubscribeCollection) unsubscribeCollection();
+  await signOut(auth);
+}
+
+async function showRecovery() {
+  const phone = document.getElementById('login-phone').value.trim();
+  const email = prompt('Digite seu email para recuperar a senha:');
+  if (email) {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showToast('Email de recuperação enviado!', 'success');
+    } catch (e) { showToast('Email não encontrado', 'error'); }
+  }
+}
+
+function getAuthError(code) {
+  const errors = {
+    'auth/user-not-found': 'Usuário não encontrado',
+    'auth/wrong-password': 'Senha incorreta',
+    'auth/email-already-in-use': 'Este número já está cadastrado',
+    'auth/invalid-email': 'Formato inválido',
+    'auth/too-many-requests': 'Muitas tentativas. Tente mais tarde.',
+    'auth/network-request-failed': 'Erro de conexão',
+  };
+  return errors[code] || 'Erro ao autenticar';
+}
+
+// ===== AUTH STATE =====
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('loading-screen').classList.add('hidden');
+  if (user) {
+    currentUser = user;
+    document.getElementById('auth-page').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    const initials = (user.displayName || 'CD').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+    document.getElementById('user-avatar').textContent = initials;
+    document.getElementById('user-name').textContent = user.displayName || 'Colecionador';
+    await loadAllData();
+    navigate('dashboard');
+  } else {
+    currentUser = null;
+    document.getElementById('auth-page').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  }
+});
+
+// ===== DATA LOADING =====
+async function loadAllData() {
+  if (!currentUser) return;
+  try {
+    const uid = currentUser.uid;
+    // Collection
+    const colQuery = query(collection(db, 'colecao'), where('uid', '==', uid), orderBy('createdAt', 'desc'));
+    if (unsubscribeCollection) unsubscribeCollection();
+    unsubscribeCollection = onSnapshot(colQuery, (snap) => {
+      collectionData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      updateNavCounts();
+      if (currentPage === 'dashboard') renderDashboard();
+      if (currentPage === 'collection') renderCollection();
+      if (currentPage === 'reports') renderReports();
+    });
+    // Wishlist
+    const wQuery = query(collection(db, 'wishlist'), where('uid', '==', uid), orderBy('createdAt', 'desc'));
+    const wSnap = await getDocs(wQuery);
+    wishlistData = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Sales
+    const sQuery = query(collection(db, 'vendas'), where('uid', '==', uid), orderBy('createdAt', 'desc'));
+    const sSnap = await getDocs(sQuery);
+    salesData = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateNavCounts();
+  } catch (e) {
+    console.error('Error loading data:', e);
+  }
+}
+
+function updateNavCounts() {
+  document.getElementById('nav-collection-count').textContent = collectionData.reduce((s, c) => s + (c.quantidade || 1), 0);
+  document.getElementById('nav-wishlist-count').textContent = wishlistData.length;
+}
+
+// ===== NAVIGATION =====
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(getPageName(page).toLowerCase())) n.classList.add('active');
+  });
+  document.getElementById('topbar-title').textContent = getPageTitle(page);
+  if (window.innerWidth < 768) {
+    document.getElementById('sidebar').classList.remove('open');
+  }
+  const titles = { dashboard:'Dashboard',scanner:'Scanner IA',collection:'Minha Coleção',wishlist:'Wishlist',sales:'À Venda',reports:'Relatórios',profile:'Perfil',settings:'Configurações' };
+  document.getElementById('topbar-title').textContent = titles[page] || page;
+
+  const content = document.getElementById('page-content');
+  content.innerHTML = '<div style="display:flex;justify-content:center;padding:60px"><div class="ai-spinner" style="width:40px;height:40px"></div></div>';
+  
+  setTimeout(() => {
+    switch(page) {
+      case 'dashboard': renderDashboard(); break;
+      case 'scanner': renderScanner(); break;
+      case 'collection': renderCollection(); break;
+      case 'wishlist': renderWishlist(); break;
+      case 'sales': renderSales(); break;
+      case 'reports': renderReports(); break;
+      case 'profile': renderProfile(); break;
+      case 'settings': renderSettings(); break;
+    }
+  }, 100);
+}
+
+function getPageName(p) {
+  const m = {dashboard:'Dashboard',scanner:'Scanner',collection:'Coleção',wishlist:'Wishlist',sales:'Venda',reports:'Relatórios',profile:'Perfil',settings:'Configurações'};
+  return m[p] || p;
+}
+function getPageTitle(p) {
+  const m = {dashboard:'Dashboard',scanner:'Scanner IA',collection:'Minha Coleção',wishlist:'Wishlist',sales:'À Venda',reports:'Relatórios',profile:'Perfil',settings:'Configurações'};
+  return m[p] || p;
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ===== DASHBOARD =====
+function renderDashboard() {
+  const total = collectionData.reduce((s, c) => s + (c.quantidade || 1), 0);
+  const unique = collectionData.length;
+  const repeated = collectionData.filter(c => (c.quantidade || 1) > 1).reduce((s, c) => s + ((c.quantidade || 1) - 1), 0);
+  const totalValue = collectionData.reduce((s, c) => s + ((c.precoVenda || 0) * (c.quantidade || 1)), 0);
+  const investido = collectionData.reduce((s, c) => s + ((c.precoPago || 0) * (c.quantidade || 1)), 0);
+  const forSale = collectionData.filter(c => c.aVenda).length;
+
+  // Rarity breakdown
+  const rarityCount = {};
+  collectionData.forEach(c => {
+    const r = c.raridade || 'common';
+    rarityCount[r] = (rarityCount[r] || 0) + (c.quantidade || 1);
+  });
+
+  // Collection breakdown
+  const colCount = {};
+  collectionData.forEach(c => {
+    const col = c.colecao || 'Sem coleção';
+    colCount[col] = (colCount[col] || 0) + 1;
+  });
+
+  // Type breakdown
+  const typeCount = {};
+  collectionData.forEach(c => {
+    const t = c.tipo || 'Colorless';
+    typeCount[t] = (typeCount[t] || 0) + 1;
+  });
+
+  // Recent 6
+  const recent = collectionData.slice(0, 6);
+
+  const rarityColors = {common:'#808088',uncommon:'#32c850',rare:'#3264ff',double_rare:'#9632ff',illustration_rare:'#ff7832',special_illustration_rare:'#ff3264',hyper_rare:'#ffd700',gold:'#ffd700',rainbow:'#ff6b6b',promo:'#32c8ff',ace_spec:'#dc32b4'};
+
+  document.getElementById('page-content').innerHTML = `
+<div class="page">
+  <div class="stats-grid">
+    <div class="stat-card" style="--card-accent:#6c63ff">
+      <div class="stat-icon">🃏</div>
+      <div class="stat-value">${total}</div>
+      <div class="stat-label">Total de Cartas</div>
+    </div>
+    <div class="stat-card" style="--card-accent:#ffd700">
+      <div class="stat-icon">✦</div>
+      <div class="stat-value">${unique}</div>
+      <div class="stat-label">Cartas Únicas</div>
+    </div>
+    <div class="stat-card" style="--card-accent:#ff4d6d">
+      <div class="stat-icon">🔁</div>
+      <div class="stat-value">${repeated}</div>
+      <div class="stat-label">Repetidas</div>
+    </div>
+    <div class="stat-card" style="--card-accent:#00d4aa">
+      <div class="stat-icon">💎</div>
+      <div class="stat-value">R$ ${totalValue.toFixed(0)}</div>
+      <div class="stat-label">Valor da Coleção</div>
+    </div>
+    <div class="stat-card" style="--card-accent:#ffb347">
+      <div class="stat-icon">💰</div>
+      <div class="stat-value">${forSale}</div>
+      <div class="stat-label">À Venda</div>
+    </div>
+    <div class="stat-card" style="--card-accent:#4db8ff">
+      <div class="stat-icon">⭐</div>
+      <div class="stat-value">${wishlistData.length}</div>
+      <div class="stat-label">Wishlist</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+    <div class="chart-container">
+      <div class="section-header"><div class="section-title">Por Raridade</div></div>
+      <div class="chart-bar" id="rarity-chart"></div>
+    </div>
+    <div class="chart-container">
+      <div class="section-header"><div class="section-title">Por Tipo</div></div>
+      <div class="chart-bar" id="type-chart"></div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div class="section-title">Últimas Adicionadas</div>
+    <button class="btn btn-secondary btn-sm" onclick="navigate('collection')">Ver todas →</button>
+  </div>
+  <div class="cards-grid" id="recent-cards">
+    ${recent.length ? recent.map(c => renderCardHTML(c)).join('') : `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div class="empty-icon">🃏</div>
+        <div class="empty-title">Nenhuma carta ainda</div>
+        <div class="empty-sub">Use o Scanner IA para adicionar sua primeira carta!</div>
+        <button class="btn btn-primary" onclick="navigate('scanner')">📷 Escanear Carta</button>
+      </div>
+    `}
+  </div>
+</div>`;
+
+  // Render charts
+  renderBarChart('rarity-chart', rarityCount, rarityColors);
+  renderBarChart('type-chart', typeCount, {Fire:'#ff503c',Water:'#3296ff',Grass:'#32c850',Electric:'#ffc832',Psychic:'#c832c8',Dark:'#a07850',Metal:'#9696b4',Dragon:'#7832c8',Fairy:'#ff96c8',Fighting:'#c85032',Colorless:'#aaaaaa'});
+}
+
+function renderBarChart(containerId, data, colors) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const entries = Object.entries(data).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  const max = Math.max(...entries.map(e => e[1]), 1);
+  el.innerHTML = entries.map(([key, val]) => {
+    const pct = Math.round((val / max) * 100);
+    const color = colors[key] || colors[key.toLowerCase()] || '#6c63ff';
+    const label = key.replace(/_/g,' ').replace(/\b\w/g, l => l.toUpperCase()).slice(0,8);
+    return `<div class="bar-wrap">
+      <div class="bar-val">${val}</div>
+      <div style="flex:1;width:100%;display:flex;align-items:flex-end">
+        <div class="bar-fill" style="height:${pct}%;background:${color};width:100%"></div>
+      </div>
+      <div class="bar-label">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== CARD HTML =====
+function renderCardHTML(card) {
+  const qty = card.quantidade || 1;
+  const rarityClass = 'rarity-' + (card.raridade || 'common').toLowerCase().replace(/\s+/g,'_');
+  const rarityLabel = (card.raridade || 'Common').replace(/_/g,' ');
+  const imgHtml = card.imagemUrl
+    ? `<img src="${card.imagemUrl}" alt="${card.nome}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`
+    : `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-secondary);background:linear-gradient(135deg,var(--bg-tertiary),var(--bg-secondary))">
+        <span style="font-size:36px">${getTypeEmoji(card.tipo)}</span>
+        <span style="font-size:12px;font-weight:600">${card.nome || '???'}</span>
+      </div>`;
+  return `<div class="poke-card" onclick="openCardDetail('${card.id}')">
+    <div class="poke-card-img">
+      ${imgHtml}
+      <div class="holographic-overlay"></div>
+      <span class="rarity-badge ${rarityClass}">${rarityLabel}</span>
+      <span class="favorite-star" onclick="event.stopPropagation();toggleFavorite('${card.id}')">${card.favorita ? '⭐' : '☆'}</span>
+      ${card.aVenda ? '<span class="sale-tag">À Venda</span>' : ''}
+    </div>
+    <div class="poke-card-info">
+      <div class="poke-card-name">${card.nome || 'Desconhecida'}</div>
+      <div class="poke-card-meta">
+        <span class="poke-card-num">#${card.numero || '???'}</span>
+        <span class="poke-card-qty">${qty}x</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function getTypeEmoji(tipo) {
+  const t = {'Fire':'🔥','Water':'💧','Grass':'🌿','Electric':'⚡','Psychic':'🔮','Dark':'🌑','Metal':'⚙️','Dragon':'🐉','Fairy':'🌸','Fighting':'🥊','Colorless':'⬜'};
+  return t[tipo] || '🃏';
+}
+
+// ===== SCANNER =====
+function renderScanner() {
+  document.getElementById('page-content').innerHTML = `
+<div class="page">
+  <div class="scanner-options">
+    <div class="scan-option" onclick="scannerSelectMode('upload')" id="opt-upload" style="border-color:var(--accent)">
+      <div class="scan-option-icon">📂</div>
+      <div class="scan-option-label">Upload de Imagem</div>
+    </div>
+    <div class="scan-option" onclick="scannerSelectMode('camera')" id="opt-camera">
+      <div class="scan-option-icon">📷</div>
+      <div class="scan-option-label">Câmera</div>
+    </div>
+    <div class="scan-option" onclick="scannerSelectMode('url')" id="opt-url">
+      <div class="scan-option-icon">🔗</div>
+      <div class="scan-option-label">URL da Imagem</div>
+    </div>
+  </div>
+  <div id="scanner-zone-wrapper">
+    <div class="scanner-zone" id="scanner-drop-zone"
+      ondrop="handleDrop(event)" ondragover="event.preventDefault();this.classList.add('dragging')"
+      ondragleave="this.classList.remove('dragging')"
+      onclick="document.getElementById('file-input').click()">
+      <div class="scanner-icon">🔍</div>
+      <div class="scanner-title">Arraste a carta aqui</div>
+      <div class="scanner-sub">ou clique para selecionar • JPG, PNG, WEBP</div>
+      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
+    </div>
+  </div>
+  <div id="camera-zone" class="hidden">
+    <div class="camera-view">
+      <video id="camera-video" autoplay playsinline></video>
+      <div class="camera-overlay">
+        <div class="camera-frame"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:12px;justify-content:center">
+      <button class="btn btn-primary" onclick="captureCamera()">📸 Capturar</button>
+      <button class="btn btn-secondary" onclick="stopCamera()">✕ Cancelar</button>
+    </div>
+  </div>
+  <div id="url-zone" class="hidden">
+    <div class="input-group" style="display:flex;gap:12px">
+      <input type="url" id="img-url-input" class="input" placeholder="https://...">
+      <button class="btn btn-primary" onclick="handleUrlScan()">Analisar</button>
+    </div>
+  </div>
+  <div id="ai-processing" class="hidden">
+    <div class="scan-result">
+      <div class="ai-thinking">
+        <div class="ai-spinner"></div>
+        <div class="ai-text" id="ai-status">Enviando para IA Gemini...</div>
+        <div style="font-size:12px;color:var(--text-secondary)">Analisando a carta com visão computacional</div>
+      </div>
+    </div>
+  </div>
+  <div id="scan-results" class="hidden"></div>
+  <div style="margin-top:24px;text-align:center">
+    <button class="btn btn-secondary btn-sm" onclick="openAddCardManual()">✏️ Adicionar Manualmente</button>
+  </div>
+</div>`;
+  window.handleDrop = (e) => { e.preventDefault(); document.getElementById('scanner-drop-zone').classList.remove('dragging'); if(e.dataTransfer.files[0]) handleFileUpload({ target: { files: e.dataTransfer.files } }); };
+  window.handleUrlScan = () => { const url = document.getElementById('img-url-input').value.trim(); if(url) analyzeImageFromUrl(url); };
+}
+
+function scannerSelectMode(mode) {
+  scannerMode = mode;
+  ['upload','camera','url'].forEach(m => {
+    document.getElementById(`opt-${m}`).style.borderColor = m === mode ? 'var(--accent)' : '';
+  });
+  document.getElementById('scanner-zone-wrapper').classList.toggle('hidden', mode !== 'upload');
+  document.getElementById('camera-zone').classList.toggle('hidden', mode !== 'camera');
+  document.getElementById('url-zone').classList.toggle('hidden', mode !== 'url');
+  if (mode === 'camera') startCamera();
+  else stopCamera();
+}
+
+async function startCamera() {
+  try {
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    document.getElementById('camera-video').srcObject = videoStream;
+  } catch (e) {
+    showToast('Câmera não disponível', 'error');
+    scannerSelectMode('upload');
+  }
+}
+
+function stopCamera() {
+  if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+}
+
+function captureCamera() {
+  const video = document.getElementById('camera-video');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    stopCamera();
+    const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+    processImageFile(file);
+  }, 'image/jpeg', 0.9);
+}
+
+async function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  processImageFile(file);
+}
+
+async function processImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    const preview = e.target.result;
+    document.getElementById('scanner-zone-wrapper').innerHTML = `
+      <div class="scan-preview" style="text-align:center">
+        <img src="${preview}" style="max-height:300px;max-width:100%;border-radius:var(--radius-md);object-fit:contain" alt="Preview">
+        <div style="margin-top:12px;font-size:13px;color:var(--text-secondary)">Imagem carregada • Analisando...</div>
+      </div>`;
+    await analyzeWithGemini(base64, 'image/jpeg');
+  };
+  reader.readAsDataURL(file);
+  // Also keep file reference for upload
+  window._currentFile = file;
+}
+
+async function analyzeImageFromUrl(url) {
+  document.getElementById('ai-processing').classList.remove('hidden');
+  document.getElementById('ai-status').textContent = 'Carregando imagem...';
+  try {
+    const resp = await fetch(url);
+    const blob = await resp.blob();
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = e.target.result.split(',')[1];
+      await analyzeWithGemini(base64, blob.type);
+    };
+    reader.readAsDataURL(blob);
+  } catch (e) {
+    showToast('Não foi possível carregar a imagem', 'error');
+    document.getElementById('ai-processing').classList.add('hidden');
+  }
+}
+
+async function analyzeWithGemini(base64Data, mimeType = 'image/jpeg') {
+  document.getElementById('ai-processing').classList.remove('hidden');
+  document.getElementById('scan-results').classList.add('hidden');
+  document.getElementById('ai-status').textContent = 'Enviando para Gemini AI...';
+
+  const prompt = `Analise cuidadosamente esta imagem de uma carta Pokémon e identifique todos os detalhes possíveis.
+
+Retorne EXCLUSIVAMENTE um JSON válido (sem markdown, sem texto extra) com esta estrutura exata:
+{
+  "nome": "Nome do Pokémon ou Treinador",
+  "numero": "Número da carta (ex: 025/165)",
+  "colecao": "Nome da coleção/set",
+  "idioma": "Português|Inglês|Japonês|Espanhol",
+  "hp": "Pontos de vida (número)",
+  "tipo": "Fire|Water|Grass|Electric|Psychic|Dark|Metal|Dragon|Fairy|Fighting|Colorless",
+  "categoria": "Pokémon|Treinador|Energia",
+  "ilustrador": "Nome do ilustrador",
+  "ano": "Ano",
+  "raridade": "Common|Uncommon|Rare|Double Rare|Illustration Rare|Special Illustration Rare|Hyper Rare|Gold|Rainbow|Promo|Ace Spec",
+  "estrelas": 0,
+  "versao": "Normal|Reverse Holo|Holo|Full Art|Alternate Art|Secret Rare|Gold|Rainbow|Illustration Rare|Special Illustration Rare|Ace Spec|Promo|Black Star Promo",
+  "subtipo": "ex|GX|V|VMAX|VSTAR|EX|Básico|Estágio 1|Estágio 2",
+  "confianca": 95,
+  "observacoes": "Qualquer detalhe adicional relevante",
+  "precoEstimado": 0
+}
+
+Se a imagem estiver inclinada, com reflexo ou parcialmente visível, faça o melhor análise possível.
+O campo "confianca" deve ser de 0 a 100 indicando sua certeza na identificação.
+Se não for uma carta Pokémon, retorne {"erro": "Não é uma carta Pokémon", "confianca": 0}.`;
+
+  try {
+    document.getElementById('ai-status').textContent = 'IA processando imagem...';
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [
+          { inline_data: { mime_type: mimeType, data: base64Data } },
+          { text: prompt }
+        ]}],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }
+      })
+    });
+    if (!response.ok) throw new Error('Gemini API error: ' + response.status);
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    document.getElementById('ai-status').textContent = 'Processando resultado...';
+
+    let jsonStr = text.trim();
+    jsonStr = jsonStr.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim();
+    const cardData = JSON.parse(jsonStr);
+
+    document.getElementById('ai-processing').classList.add('hidden');
+
+    if (cardData.erro) {
+      showToast('Não foi possível identificar a carta: ' + cardData.erro, 'error');
+      return;
+    }
+    showScanResults(cardData, base64Data, mimeType);
+  } catch (e) {
+    console.error('Gemini error:', e);
+    document.getElementById('ai-processing').classList.add('hidden');
+    showToast('Erro na análise com IA. Verifique a imagem.', 'error');
+  }
+}
+
+function showScanResults(cardData, base64Data, mimeType) {
+  const conf = cardData.confianca || 0;
+  const confColor = conf >= 90 ? 'var(--success)' : conf >= 70 ? 'var(--warning)' : 'var(--danger)';
+  const rarityClass = 'rarity-' + (cardData.raridade || 'common').toLowerCase().replace(/\s+/g,'_');
+
+  document.getElementById('scan-results').classList.remove('hidden');
+  document.getElementById('scan-results').innerHTML = `
+<div class="scan-result">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div>
+      <div style="font-size:20px;font-weight:700;font-family:var(--font-main)">${cardData.nome || 'Carta Identificada'}</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-top:2px">${cardData.colecao || ''} ${cardData.numero ? '• #'+cardData.numero : ''}</div>
+    </div>
+    <span class="rarity-badge ${rarityClass}" style="position:relative;font-size:12px;padding:5px 12px">${cardData.raridade || 'Comum'}</span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <div style="flex:1">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">Confiança da IA</div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width:${conf}%;background:${confColor}"></div>
+      </div>
+    </div>
+    <div style="font-size:24px;font-weight:800;color:${confColor}">${conf}%</div>
+  </div>
+
+  ${conf < 90 ? `<div style="background:rgba(255,179,71,0.1);border:1px solid rgba(255,179,71,0.3);border-radius:var(--radius-md);padding:12px;margin-bottom:16px;font-size:13px;color:var(--warning)">
+    ⚠️ Confiança abaixo de 90%. Por favor, confirme os dados antes de salvar.
+  </div>` : ''}
+
+  <div class="scan-grid">
+    ${Object.entries({
+      'Tipo': cardData.tipo, 'Categoria': cardData.categoria,
+      'HP': cardData.hp, 'Idioma': cardData.idioma,
+      'Ano': cardData.ano, 'Versão': cardData.versao,
+      'Subtipo': cardData.subtipo, 'Ilustrador': cardData.ilustrador
+    }).filter(([,v]) => v).map(([k,v]) => `
+      <div class="scan-field">
+        <div class="scan-field-label">${k}</div>
+        <div class="scan-field-value">${v}</div>
+      </div>`).join('')}
+  </div>
+
+  ${cardData.observacoes ? `<div style="margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:13px;color:var(--text-secondary)">${cardData.observacoes}</div>` : ''}
+
+  <div style="margin-top:20px;display:flex;gap:12px">
+    <button class="btn btn-primary" style="flex:1" onclick="confirmScan(${JSON.stringify(cardData).replace(/"/g,'&quot;')})">
+      ✓ Salvar na Coleção
+    </button>
+    <button class="btn btn-secondary" onclick="rejectScan()">✕ Descartar</button>
+  </div>
+</div>`;
+  window._scanBase64 = base64Data;
+  window._scanMime = mimeType;
+}
+
+async function confirmScan(cardDataStr) {
+  let cardData = typeof cardDataStr === 'string' ? JSON.parse(cardDataStr.replace(/&quot;/g,'"')) : cardDataStr;
+  await saveCard(cardData);
+}
+
+function rejectScan() {
+  document.getElementById('scan-results').classList.add('hidden');
+  showToast('Scan descartado', 'info');
+  renderScanner();
+}
+
+// ===== SAVE CARD =====
+async function saveCard(cardData, extraData = {}) {
+  if (!currentUser) return;
+  try {
+    // Check for duplicates
+    const existingQuery = query(
+      collection(db, 'colecao'),
+      where('uid', '==', currentUser.uid),
+      where('nome', '==', cardData.nome || ''),
+      where('numero', '==', cardData.numero || '')
+    );
+    const existing = await getDocs(existingQuery);
+    
+    if (!existing.empty) {
+      const existingDoc = existing.docs[0];
+      const currentQty = existingDoc.data().quantidade || 1;
+      await updateDoc(doc(db, 'colecao', existingDoc.id), {
+        quantidade: currentQty + 1,
+        updatedAt: serverTimestamp(),
+        historico: [...(existingDoc.data().historico || []), { acao: 'adicionado', data: new Date().toISOString(), nota: 'Via Scanner' }]
+      });
+      showToast(`+1 ${cardData.nome} — Agora você tem ${currentQty + 1}`, 'success');
+    } else {
+      // Upload image if available
+      let imagemUrl = cardData.imagemUrl || '';
+      if (window._currentFile || window._scanBase64) {
+        try {
+          const fileToUpload = window._currentFile;
+          if (fileToUpload) {
+            const storageRef = ref(storage, `colecao/${currentUser.uid}/${Date.now()}_${fileToUpload.name}`);
+            await uploadBytes(storageRef, fileToUpload);
+            imagemUrl = await getDownloadURL(storageRef);
+          }
+        } catch (e) { console.warn('Image upload failed:', e); }
+      }
+      
+      const newCard = {
+        uid: currentUser.uid,
+        nome: cardData.nome || 'Desconhecida',
+        numero: cardData.numero || '',
+        colecao: cardData.colecao || '',
+        idioma: cardData.idioma || 'Português',
+        hp: cardData.hp || '',
+        tipo: cardData.tipo || 'Colorless',
+        categoria: cardData.categoria || 'Pokémon',
+        ilustrador: cardData.ilustrador || '',
+        ano: cardData.ano || '',
+        raridade: (cardData.raridade || 'Common').toLowerCase().replace(/\s+/g,'_'),
+        estrelas: cardData.estrelas || 0,
+        versao: cardData.versao || 'Normal',
+        subtipo: cardData.subtipo || '',
+        quantidade: 1,
+        condicao: extraData.condicao || 'NM',
+        precoPago: parseFloat(extraData.precoPago || 0),
+        precoVenda: parseFloat(extraData.precoVenda || cardData.precoEstimado || 0),
+        precoMinimo: parseFloat(extraData.precoMinimo || 0),
+        observacoes: extraData.observacoes || cardData.observacoes || '',
+        favorita: false,
+        aVenda: false,
+        imagemUrl,
+        historico: [{ acao: 'criado', data: new Date().toISOString(), nota: 'Via Scanner IA' }],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        ...extraData
+      };
+      
+      await addDoc(collection(db, 'colecao'), newCard);
+      
+      // Check if in wishlist and remove
+      const wl = wishlistData.find(w => w.nome && w.nome.toLowerCase() === (cardData.nome || '').toLowerCase());
+      if (wl) {
+        await deleteDoc(doc(db, 'wishlist', wl.id));
+        wishlistData = wishlistData.filter(w => w.id !== wl.id);
+        showToast(`🎉 ${cardData.nome} removido da wishlist!`, 'success');
+      }
+      
+      showToast(`✦ ${cardData.nome} adicionada à coleção!`, 'success');
+    }
+    
+    window._currentFile = null;
+    window._scanBase64 = null;
+    navigate('collection');
+  } catch (e) {
+    console.error('Save error:', e);
+    showToast('Erro ao salvar carta', 'error');
+  }
+}
+
+// ===== COLLECTION =====
+let activeFilters = {};
+let searchQuery = '';
+
+function renderCollection(filtered = null) {
+  const cards = filtered || collectionData;
+  document.getElementById('page-content').innerHTML = `
+<div class="page">
+  <div class="filters-bar">
+    <div style="display:flex;gap:8px;align-items:center;flex:1;min-width:200px">
+      <span style="font-size:18px">🔍</span>
+      <input type="text" class="input" placeholder="Buscar por nome..." id="col-search" 
+        value="${searchQuery}" oninput="filterCollection(this.value)" style="max-width:250px">
+    </div>
+    <select class="input" style="max-width:160px" onchange="applyFilter('raridade',this.value)">
+      <option value="">Todas raridades</option>
+      ${['common','uncommon','rare','double_rare','illustration_rare','special_illustration_rare','hyper_rare','gold','rainbow','promo','ace_spec'].map(r => `<option value="${r}" ${activeFilters.raridade===r?'selected':''}>${r.replace(/_/g,' ')}</option>`).join('')}
+    </select>
+    <select class="input" style="max-width:140px" onchange="applyFilter('tipo',this.value)">
+      <option value="">Todos tipos</option>
+      ${['Fire','Water','Grass','Electric','Psychic','Dark','Metal','Dragon','Fairy','Fighting','Colorless'].map(t => `<option value="${t}" ${activeFilters.tipo===t?'selected':''}>${t}</option>`).join('')}
+    </select>
+    <select class="input" style="max-width:130px" onchange="applyFilter('idioma',this.value)">
+      <option value="">Idioma</option>
+      ${['Português','Inglês','Japonês','Espanhol'].map(l => `<option value="${l}" ${activeFilters.idioma===l?'selected':''}>${l}</option>`).join('')}
+    </select>
+    <div style="display:flex;gap:6px">
+      <div class="filter-chip ${activeFilters.favorita?'active':''}" onclick="toggleFilterChip('favorita')">⭐ Favoritas</div>
+      <div class="filter-chip ${activeFilters.aVenda?'active':''}" onclick="toggleFilterChip('aVenda')">💰 À Venda</div>
+      <div class="filter-chip ${activeFilters.repetidas?'active':''}" onclick="toggleFilterChip('repetidas')">🔁 Repetidas</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openAddCardManual()">+ Adicionar</button>
+  </div>
+  <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+    ${cards.length} carta${cards.length !== 1 ? 's' : ''} • ${cards.reduce((s,c) => s+(c.quantidade||1),0)} total
+  </div>
+  ${cards.length ? `<div class="cards-grid">${cards.map(c => renderCardHTML(c)).join('')}</div>` : `
+  <div class="empty-state">
+    <div class="empty-icon">🃏</div>
+    <div class="empty-title">Nenhuma carta encontrada</div>
+    <div class="empty-sub">Tente remover os filtros ou adicione novas cartas</div>
+    <button class="btn btn-primary" onclick="navigate('scanner')">📷 Escanear Carta</button>
+  </div>`}
+</div>`;
+}
+
+function filterCollection(q) {
+  searchQuery = q;
+  const filtered = applyAllFilters();
+  renderCollection(filtered);
+}
+
+function applyFilter(key, value) {
+  if (value) activeFilters[key] = value;
+  else delete activeFilters[key];
+  renderCollection(applyAllFilters());
+}
+
+function toggleFilterChip(key) {
+  if (activeFilters[key]) delete activeFilters[key];
+  else activeFilters[key] = true;
+  renderCollection(applyAllFilters());
+}
+
+function applyAllFilters() {
+  let data = [...collectionData];
+  if (searchQuery) data = data.filter(c => (c.nome||'').toLowerCase().includes(searchQuery.toLowerCase()) || (c.numero||'').includes(searchQuery) || (c.colecao||'').toLowerCase().includes(searchQuery.toLowerCase()));
+  if (activeFilters.raridade) data = data.filter(c => c.raridade === activeFilters.raridade);
+  if (activeFilters.tipo) data = data.filter(c => c.tipo === activeFilters.tipo);
+  if (activeFilters.idioma) data = data.filter(c => c.idioma === activeFilters.idioma);
+  if (activeFilters.favorita) data = data.filter(c => c.favorita);
+  if (activeFilters.aVenda) data = data.filter(c => c.aVenda);
+  if (activeFilters.repetidas) data = data.filter(c => (c.quantidade||1) > 1);
+  return data;
+}
+
+// ===== CARD DETAIL MODAL =====
+async function openCardDetail(cardId) {
+  const card = collectionData.find(c => c.id === cardId);
+  if (!card) return;
+  const rarityClass = 'rarity-' + (card.raridade || 'common').toLowerCase().replace(/\s+/g,'_');
+  const imgEl = card.imagemUrl
+    ? `<img src="${card.imagemUrl}" alt="${card.nome}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius-lg)">`
+    : `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--bg-tertiary),var(--bg-secondary));border-radius:var(--radius-lg);gap:12px">
+        <span style="font-size:64px">${getTypeEmoji(card.tipo)}</span>
+        <span style="font-size:18px;font-weight:700">${card.nome}</span>
+       </div>`;
+
+  const html = `
+<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div class="modal" style="max-width:700px">
+  <div class="modal-header">
+    <div class="modal-title">${card.nome || 'Carta'}</div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="card-detail">
+    <div>
+      <div class="card-detail-img" style="aspect-ratio:2/3">${imgEl}</div>
+      <div class="card-detail-actions">
+        <button class="btn btn-secondary btn-sm" onclick="toggleFavorite('${card.id}')">${card.favorita?'⭐ Favoritada':'☆ Favoritar'}</button>
+        <button class="btn btn-secondary btn-sm" onclick="toggleSale('${card.id}')">${card.aVenda?'🚫 Tirar da venda':'💰 À Venda'}</button>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">Quantidade</div>
+        <div class="card-qty-controls">
+          <button class="qty-btn" onclick="updateQuantity('${card.id}',-1)">−</button>
+          <div class="qty-display">${card.quantidade || 1}</div>
+          <button class="qty-btn" onclick="updateQuantity('${card.id}',1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <span class="rarity-badge ${rarityClass}" style="position:relative">${(card.raridade||'common').replace(/_/g,' ')}</span>
+        ${card.tipo ? `<span class="type-badge type-${card.tipo.toLowerCase()}">${card.tipo}</span>` : ''}
+        ${card.subtipo ? `<span style="font-size:12px;background:var(--bg-secondary);padding:3px 10px;border-radius:10px;border:1px solid var(--border)">${card.subtipo}</span>` : ''}
+      </div>
+      <div class="info-grid">
+        ${[
+          ['Número','#' + (card.numero||'???')],
+          ['Coleção', card.colecao||'-'],
+          ['HP', card.hp||'-'],
+          ['Idioma', card.idioma||'-'],
+          ['Ano', card.ano||'-'],
+          ['Versão', card.versao||'-'],
+          ['Condição', card.condicao||'-'],
+          ['Ilustrador', card.ilustrador||'-'],
+          ['Preço Pago', card.precoPago ? 'R$ ' + card.precoPago.toFixed(2) : '-'],
+          ['Preço Venda', card.precoVenda ? 'R$ ' + card.precoVenda.toFixed(2) : '-'],
+        ].map(([k,v]) => `<div class="info-item"><div class="info-label">${k}</div><div class="info-value">${v}</div></div>`).join('')}
+      </div>
+      ${card.observacoes ? `<div style="margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:var(--radius-md);font-size:13px;color:var(--text-secondary)">${card.observacoes}</div>` : ''}
+      
+      <div style="margin-top:16px">
+        <div class="section-title" style="margin-bottom:8px">Histórico</div>
+        <div class="history-list">
+          ${(card.historico || []).slice(-5).reverse().map(h => `
+            <div class="history-item">
+              <div class="history-icon">${h.acao==='criado'?'✦':h.acao==='adicionado'?'➕':'✏️'}</div>
+              <div>
+                <div class="history-text">${h.nota || h.acao}</div>
+              </div>
+              <div class="history-date">${h.data ? new Date(h.data).toLocaleDateString('pt-BR') : ''}</div>
+            </div>`).join('') || '<div style="font-size:13px;color:var(--text-secondary);padding:8px 0">Sem histórico</div>'}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary btn-sm" onclick="editCard('${card.id}')">✏️ Editar</button>
+    <button class="btn btn-secondary btn-sm" onclick="duplicateCard('${card.id}')">⊕ Duplicar</button>
+    <button class="btn btn-danger btn-sm" onclick="deleteCard('${card.id}')">🗑 Excluir</button>
+  </div>
+</div>
+</div>`;
+  document.getElementById('modal-container').innerHTML = html;
+}
+
+// ===== CARD ACTIONS =====
+async function toggleFavorite(cardId) {
+  const card = collectionData.find(c => c.id === cardId);
+  if (!card) return;
+  await updateDoc(doc(db, 'colecao', cardId), { favorita: !card.favorita, updatedAt: serverTimestamp() });
+  showToast(card.favorita ? 'Removido dos favoritos' : '⭐ Adicionado aos favoritos', 'success');
+  closeModal();
+}
+
+async function toggleSale(cardId) {
+  const card = collectionData.find(c => c.id === cardId);
+  if (!card) return;
+  const newStatus = !card.aVenda;
+  await updateDoc(doc(db, 'colecao', cardId), { aVenda: newStatus, updatedAt: serverTimestamp() });
+  if (newStatus) {
+    // Add to vendas
+    await addDoc(collection(db, 'vendas'), {
+      uid: currentUser.uid, cardId, nome: card.nome, raridade: card.raridade,
+      precoAnunciado: card.precoVenda || 0, precoVendido: 0, condicao: card.condicao || 'NM',
+      quantidade: 1, status: 'disponivel', imagemUrl: card.imagemUrl || '',
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+  }
+  showToast(newStatus ? '💰 Carta listada à venda!' : 'Removida da venda', 'info');
+  closeModal();
+}
+
+async function updateQuantity(cardId, delta) {
+  const card = collectionData.find(c => c.id === cardId);
+  if (!card) return;
+  const newQty = Math.max(0, (card.quantidade || 1) + delta);
+  if (newQty === 0) {
+    if (!confirm('Quantidade chegou a zero. Deseja excluir a carta?')) return;
+    await deleteCard(cardId); return;
+  }
+  await updateDoc(doc(db, 'colecao', cardId), {
+    quantidade: newQty, updatedAt: serverTimestamp(),
+    historico: [...(card.historico || []), { acao: delta > 0 ? 'adicionado' : 'removido', data: new Date().toISOString(), nota: `Quantidade ${delta > 0 ? 'aumentada' : 'reduzida'}: ${newQty}` }]
+  });
+  showToast(`Quantidade: ${newQty}`, 'info');
+  closeModal();
+}
+
+async function deleteCard(cardId) {
+  if (!confirm('Tem certeza que deseja excluir esta carta?')) return;
+  await deleteDoc(doc(db, 'colecao', cardId));
+  showToast('Carta removida', 'info');
+  closeModal();
+}
+
+async function duplicateCard(cardId) {
+  const card = collectionData.find(c => c.id === cardId);
+  if (!card) return;
+  const { id, ...cardData } = card;
+  await addDoc(collection(db, 'colecao'), { ...cardData, quantidade: 1, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  showToast('Carta duplicada!', 'success');
+  closeModal();
+}
+
+// ===== MANUAL ADD / EDIT =====
+function openAddCardManual(prefill = {}) {
+  const isEdit = !!prefill.id;
+  const raridades = ['common','uncommon','rare','double_rare','illustration_rare','special_illustration_rare','hyper_rare','gold','rainbow','promo','ace_spec'];
+  const tipos = ['Fire','Water','Grass','Electric','Psychic','Dark','Metal','Dragon','Fairy','Fighting','Colorless'];
+  const idiomas = ['Português','Inglês','Japonês','Espanhol'];
+  const condicoes = ['Mint','NM','LP','MP','HP','Damaged'];
+  const versoes = ['Normal','Reverse Holo','Holo','Full Art','Alternate Art','Secret Rare','Gold','Rainbow','Illustration Rare','Promo'];
+
+  const html = `
+<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div class="modal" style="max-width:650px">
+  <div class="modal-header">
+    <div class="modal-title">${isEdit ? 'Editar' : 'Adicionar'} Carta</div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label class="form-label">Nome *</label>
+      <input type="text" id="f-nome" class="input" value="${prefill.nome||''}" placeholder="Nome do Pokémon">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Número</label>
+      <input type="text" id="f-numero" class="input" value="${prefill.numero||''}" placeholder="025/165">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Coleção</label>
+      <input type="text" id="f-colecao" class="input" value="${prefill.colecao||''}" placeholder="Scarlet & Violet">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Idioma</label>
+      <select id="f-idioma" class="input">${idiomas.map(i => `<option ${prefill.idioma===i?'selected':''}>${i}</option>`).join('')}</select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select id="f-tipo" class="input">${tipos.map(t => `<option ${prefill.tipo===t?'selected':''}>${t}</option>`).join('')}</select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">HP</label>
+      <input type="number" id="f-hp" class="input" value="${prefill.hp||''}" placeholder="120">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Raridade</label>
+      <select id="f-raridade" class="input">${raridades.map(r => `<option value="${r}" ${prefill.raridade===r?'selected':''}>${r.replace(/_/g,' ')}</option>`).join('')}</select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Versão</label>
+      <select id="f-versao" class="input">${versoes.map(v => `<option ${prefill.versao===v?'selected':''}>${v}</option>`).join('')}</select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Condição</label>
+      <select id="f-condicao" class="input">${condicoes.map(c => `<option ${prefill.condicao===c?'selected':''}>${c}</option>`).join('')}</select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Quantidade</label>
+      <input type="number" id="f-quantidade" class="input" value="${prefill.quantidade||1}" min="1">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Preço Pago (R$)</label>
+      <input type="number" id="f-precoPago" class="input" value="${prefill.precoPago||''}" placeholder="0.00" step="0.01">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Preço Venda (R$)</label>
+      <input type="number" id="f-precoVenda" class="input" value="${prefill.precoVenda||''}" placeholder="0.00" step="0.01">
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Observações</label>
+    <textarea id="f-observacoes" class="input">${prefill.observacoes||''}</textarea>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Imagem (Upload)</label>
+    <input type="file" id="f-imagem" accept="image/*" class="input">
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveManualCard('${prefill.id||''}')">
+      ${isEdit ? '✓ Salvar Alterações' : '✦ Adicionar à Coleção'}
+    </button>
+  </div>
+</div>
+</div>`;
+  document.getElementById('modal-container').innerHTML = html;
+}
+
+function editCard(cardId) {
+  const card = collectionData.find(c => c.id === cardId);
+  if (card) { closeModal(); setTimeout(() => openAddCardManual(card), 100); }
+}
+
+async function saveManualCard(existingId) {
+  const nome = document.getElementById('f-nome').value.trim();
+  if (!nome) { showToast('Nome é obrigatório', 'error'); return; }
+  
+  const imgFile = document.getElementById('f-imagem').files[0];
+  let imagemUrl = existingId ? (collectionData.find(c=>c.id===existingId)?.imagemUrl||'') : '';
+  
+  if (imgFile) {
+    try {
+      const storageRef = ref(storage, `colecao/${currentUser.uid}/${Date.now()}_${imgFile.name}`);
+      await uploadBytes(storageRef, imgFile);
+      imagemUrl = await getDownloadURL(storageRef);
+    } catch (e) { console.warn('Image upload failed:', e); }
+  }
+  
+  const cardData = {
+    nome, numero: document.getElementById('f-numero').value,
+    colecao: document.getElementById('f-colecao').value,
+    idioma: document.getElementById('f-idioma').value,
+    tipo: document.getElementById('f-tipo').value,
+    hp: document.getElementById('f-hp').value,
+    raridade: document.getElementById('f-raridade').value,
+    versao: document.getElementById('f-versao').value,
+    condicao: document.getElementById('f-condicao').value,
+    quantidade: parseInt(document.getElementById('f-quantidade').value) || 1,
+    precoPago: parseFloat(document.getElementById('f-precoPago').value) || 0,
+    precoVenda: parseFloat(document.getElementById('f-precoVenda').value) || 0,
+    observacoes: document.getElementById('f-observacoes').value,
+    imagemUrl, updatedAt: serverTimestamp()
+  };
+  
+  try {
+    if (existingId) {
+      await updateDoc(doc(db, 'colecao', existingId), cardData);
+      showToast('Carta atualizada!', 'success');
+    } else {
+      await addDoc(collection(db, 'colecao'), {
+        ...cardData, uid: currentUser.uid, favorita: false, aVenda: false,
+        historico: [{ acao: 'criado', data: new Date().toISOString(), nota: 'Adicionado manualmente' }],
+        createdAt: serverTimestamp()
+      });
+      showToast('Carta adicionada!', 'success');
+    }
+    closeModal();
+  } catch (e) {
+    console.error(e); showToast('Erro ao salvar', 'error');
+  }
+}
+
+// ===== WISHLIST =====
+function renderWishlist() {
+  document.getElementById('page-content').innerHTML = `
+<div class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div>
+      <div class="section-title">Lista de Desejos</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${wishlistData.length} itens na sua lista</div>
+    </div>
+    <button class="btn btn-primary" onclick="openAddWishlist()">+ Adicionar Desejo</button>
+  </div>
+  ${wishlistData.length ? `<div style="display:flex;flex-direction:column;gap:12px">
+    ${wishlistData.map(w => `
+    <div class="wishlist-card">
+      <div class="wishlist-priority priority-${w.prioridade||'medium'}"></div>
+      <div class="wishlist-info">
+        <div class="wishlist-name">${w.nome}</div>
+        <div class="wishlist-meta">${w.colecao||''} ${w.precoEsperado ? '• Até R$ ' + w.precoEsperado.toFixed(2) : ''} • Prioridade: ${w.prioridade||'média'}</div>
+        ${w.observacoes ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">${w.observacoes}</div>` : ''}
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="markWishlistFound('${w.id}')">✓ Encontrei!</button>
+        <button class="btn-icon" onclick="removeFromWishlist('${w.id}')">🗑</button>
+      </div>
+    </div>`).join('')}
+  </div>` : `
+  <div class="empty-state">
+    <div class="empty-icon">⭐</div>
+    <div class="empty-title">Wishlist vazia</div>
+    <div class="empty-sub">Adicione cartas que você deseja completar sua coleção</div>
+    <button class="btn btn-primary" onclick="openAddWishlist()">+ Adicionar Desejo</button>
+  </div>`}
+</div>`;
+}
+
+function openAddWishlist() {
+  const html = `
+<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+<div class="modal" style="max-width:480px">
+  <div class="modal-header">
+    <div class="modal-title">Adicionar à Wishlist</div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Nome da Carta *</label>
+    <input type="text" id="w-nome" class="input" placeholder="Ex: Charizard ex">
+  </div>
+  <div class="form-group">
+    <label class="form-label">Coleção</label>
+    <input type="text" id="w-colecao" class="input" placeholder="Obsidian Flames">
+  </div>
+  <div class="form-grid">
+    <div class="form-group">
+      <label class="form-label">Prioridade</label>
+      <select id="w-prioridade" class="input">
+        <option value="high">🔴 Alta</option>
+        <option value="medium" selected>🟡 Média</option>
+        <option value="low">🟢 Baixa</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Preço Esperado (R$)</label>
+      <input type="number" id="w-preco" class="input" placeholder="0.00" step="0.01">
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Observações</label>
+    <textarea id="w-obs" class="input" rows="3" placeholder="Versão Holo, idioma japonês..."></textarea>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-primary" onclick="saveWishlist()">⭐ Salvar</button>
+  </div>
+</div>
+</div>`;
+  document.getElementById('modal-container').innerHTML = html;
+}
+
+async function saveWishlist() {
+  const nome = document.getElementById('w-nome').value.trim();
+  if (!nome) { showToast('Nome é obrigatório', 'error'); return; }
+  try {
+    const newItem = {
+      uid: currentUser.uid, nome,
+      colecao: document.getElementById('w-colecao').value,
+      prioridade: document.getElementById('w-prioridade').value,
+      precoEsperado: parseFloat(document.getElementById('w-preco').value) || 0,
+      observacoes: document.getElementById('w-obs').value,
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    };
+    const ref2 = await addDoc(collection(db, 'wishlist'), newItem);
+    wishlistData.unshift({ id: ref2.id, ...newItem });
+    updateNavCounts();
+    showToast('⭐ Adicionado à wishlist!', 'success');
+    closeModal();
+    renderWishlist();
+  } catch (e) { showToast('Erro ao salvar', 'error'); }
+}
+
+async function removeFromWishlist(id) {
+  await deleteDoc(doc(db, 'wishlist', id));
+  wishlistData = wishlistData.filter(w => w.id !== id);
+  updateNavCounts();
+  showToast('Removido da wishlist', 'info');
+  renderWishlist();
+}
+
+function markWishlistFound(id) {
+  const item = wishlistData.find(w => w.id === id);
+  if (item) {
+    navigate('scanner');
+    showToast(`Escaneie a carta "${item.nome}"!`, 'info');
+  }
+}
+
+// ===== SALES =====
+function renderSales() {
+  const forSale = collectionData.filter(c => c.aVenda);
+  const totalAnunciado = forSale.reduce((s,c) => s + (c.precoVenda||0) * (c.quantidade||1), 0);
+
+  document.getElementById('page-content').innerHTML = `
+<div class="page">
+  <div class="stats-grid" style="margin-bottom:20px">
+    <div class="stat-card" style="--card-accent:#00d4aa">
+      <div class="stat-icon">💰</div>
+      <div class="stat-value">${forSale.length}</div>
+      <div class="stat-label">Cartas à Venda</div>
+    </div>
+    <div class="stat-card" style="--card-accent:#ffd700">
+      <div class="stat-icon">💎</div>
+      <div class="stat-value">R$ ${totalAnunciado.toFixed(0)}</div>
+      <div class="stat-label">Valor Anunciado</div>
+    </div>
+    <div class="stat-card" style="--card-accent:#ff4d6d">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value">${salesData.filter(s=>s.status==='vendida').length}</div>
+      <div class="stat-label">Vendidas</div>
+    </div>
+  </div>
+  ${forSale.length ? `<div style="display:grid;gap:16px">
+    ${forSale.map(card => `
+    <div class="sale-card">
+      <div style="display:flex;align-items:flex-start;gap:16px">
+        <div style="width:60px;height:80px;border-radius:var(--radius-md);overflow:hidden;background:var(--bg-secondary);flex-shrink:0">
+          ${card.imagemUrl ? `<img src="${card.imagemUrl}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px">${getTypeEmoji(card.tipo)}</div>`}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px">${card.nome}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">${card.colecao||''} ${card.numero ? '• #'+card.numero : ''} • Cond: ${card.condicao||'NM'}</div>
+          <div class="sale-prices">
+            <div class="price-item">
+              <div class="price-label">Anunciado</div>
+              <div class="price-value">R$ ${(card.precoVenda||0).toFixed(2)}</div>
+            </div>
+            <div class="price-item">
+              <div class="price-label">Qtd</div>
+              <div class="price-value">${card.quantidade||1}</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="sale-status status-available">● Disponível</span>
+          <button class="btn btn-secondary btn-sm" onclick="toggleSale('${card.id}')">Retirar</button>
+          <button class="btn btn-secondary btn-sm" onclick="openCardDetail('${card.id}')">Ver</button>
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>` : `
+  <div class="empty-state">
+    <div class="empty-icon">💰</div>
+    <div class="empty-title">Nenhuma carta à venda</div>
+    <div class="empty-sub">Marque cartas da sua coleção como "À Venda" para listá-las aqui</div>
+    <button class="btn btn-primary" onclick="navigate('collection')">🃏 Ver Coleção</button>
+  </div>`}
+</div>`;
+}
+
+// ===== REPORTS =====
+function renderReports() {
+  const total = collectionData.reduce((s,c) => s+(c.quantidade||1), 0);
+  const unique = collectionData.length;
+  const investido = collectionData.reduce((s,c) => s+((c.precoPago||0)*(c.quantidade||1)), 0);
+  const estimado = collectionData.reduce((s,c) => s+((c.precoVenda||0)*(c.quantidade||1)), 0);
+  const lucro = estimado - investido;
+
+  const rarityCount = {};
+  const colCount = {};
+  collectionData.forEach(c => {
+    rarityCount[(c.raridade||'common')] = (rarityCount[(c.raridade||'common')] || 0) + (c.quantidade||1);
+    colCount[(c.colecao||'Sem coleção')] = (colCount[(c.colecao||'Sem coleção')] || 0) + 1;
+  });
+
+  const topCards = [...collectionData].sort((a,b) => (b.precoVenda||0)-(a.precoVenda||0)).slice(0,5);
+  const mostRepeated = [...collectionData].filter(c=>(c.quantidade||1)>1).sort((a,b) => (b.quantidade||1)-(a.quantidade||1)).slice(0,5);
+
+  document.getElementById('page-content').innerHTML = `
+<div class="page">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px">
+    <div class="report-stat"><div class="report-value">${total}</div><div class="report-label">Total de Cartas</div></div>
+    <div class="report-stat"><div class="report-value">${unique}</div><div class="report-label">Únicas</div></div>
+    <div class="report-stat"><div class="report-value">R$ ${investido.toFixed(0)}</div><div class="report-label">Investido</div></div>
+    <div class="report-stat"><div class="report-value">R$ ${estimado.toFixed(0)}</div><div class="report-label">Estimado</div></div>
+    <div class="report-stat"><div class="report-value" style="${lucro>=0?'':'background:linear-gradient(135deg,var(--danger),#ff8080);-webkit-background-clip:text;-webkit-text-fill-color:transparent'}">R$ ${lucro.toFixed(0)}</div><div class="report-label">Lucro/Prejuízo</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+    <div class="chart-container">
+      <div class="section-title" style="margin-bottom:12px">Por Raridade</div>
+      <div>${Object.entries(rarityCount).sort((a,b)=>b[1]-a[1]).map(([r,q]) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="font-size:12px;width:130px;color:var(--text-secondary)">${r.replace(/_/g,' ')}</div>
+          <div style="flex:1;height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden">
+            <div style="height:100%;background:var(--accent);width:${Math.round(q/Math.max(...Object.values(rarityCount))*100)}%;border-radius:4px;transition:width 1s ease"></div>
+          </div>
+          <div style="font-size:12px;font-weight:600;min-width:24px;text-align:right">${q}</div>
+        </div>`).join('')}</div>
+    </div>
+    <div class="chart-container">
+      <div class="section-title" style="margin-bottom:12px">Por Coleção</div>
+      <div>${Object.entries(colCount).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([col,q]) => `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <div style="font-size:12px;width:130px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${col}</div>
+          <div style="flex:1;height:8px;background:var(--bg-secondary);border-radius:4px;overflow:hidden">
+            <div style="height:100%;background:var(--gold);width:${Math.round(q/Math.max(...Object.values(colCount))*100)}%;border-radius:4px;transition:width 1s ease"></div>
+          </div>
+          <div style="font-size:12px;font-weight:600;min-width:24px;text-align:right">${q}</div>
+        </div>`).join('')}</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="chart-container">
+      <div class="section-title" style="margin-bottom:12px">💎 Mais Valiosas</div>
+      ${topCards.map((c,i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i+1}</div>
+          <div style="flex:1;font-size:13px;font-weight:500">${c.nome}</div>
+          <div style="font-size:13px;color:var(--gold);font-weight:700">R$ ${(c.precoVenda||0).toFixed(2)}</div>
+        </div>`).join('') || '<div style="font-size:13px;color:var(--text-secondary);padding:8px 0">Nenhuma carta com preço</div>'}
+    </div>
+    <div class="chart-container">
+      <div class="section-title" style="margin-bottom:12px">🔁 Mais Repetidas</div>
+      ${mostRepeated.map((c,i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i+1}</div>
+          <div style="flex:1;font-size:13px;font-weight:500">${c.nome}</div>
+          <div class="poke-card-qty">${c.quantidade}x</div>
+        </div>`).join('') || '<div style="font-size:13px;color:var(--text-secondary);padding:8px 0">Nenhuma carta repetida</div>'}
+    </div>
+  </div>
+
+  <div style="margin-top:24px;display:flex;gap:12px;justify-content:center">
+    <button class="btn btn-secondary" onclick="exportCollection('csv')">📄 Exportar CSV</button>
+    <button class="btn btn-secondary" onclick="exportCollection('json')">{ } Exportar JSON</button>
+  </div>
+</div>`;
+}
+
+// ===== PROFILE =====
+function renderProfile() {
+  const total = collectionData.reduce((s,c) => s+(c.quantidade||1), 0);
+  const estimado = collectionData.reduce((s,c) => s+((c.precoVenda||0)*(c.quantidade||1)), 0);
+  document.getElementById('page-content').innerHTML = `
+<div class="page" style="max-width:600px;margin:0 auto">
+  <div style="text-align:center;padding:40px 0">
+    <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--gold));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:0 auto 16px">${(currentUser?.displayName||'CD').slice(0,2).toUpperCase()}</div>
+    <div style="font-size:24px;font-weight:700;font-family:var(--font-main)">${currentUser?.displayName||'Colecionador'}</div>
+    <div style="font-size:14px;color:var(--text-secondary);margin-top:4px">${currentUser?.email||''}</div>
+    <div style="display:flex;justify-content:center;gap:24px;margin-top:24px">
+      <div style="text-align:center">
+        <div style="font-size:24px;font-weight:800;font-family:var(--font-main);color:var(--accent)">${total}</div>
+        <div style="font-size:12px;color:var(--text-secondary)">Cartas</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:24px;font-weight:800;font-family:var(--font-main);color:var(--gold)">${collectionData.length}</div>
+        <div style="font-size:12px;color:var(--text-secondary)">Únicas</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:24px;font-weight:800;font-family:var(--font-main);color:var(--success)">R$ ${estimado.toFixed(0)}</div>
+        <div style="font-size:12px;color:var(--text-secondary)">Estimado</div>
+      </div>
+    </div>
+  </div>
+  <div class="glass-card" style="padding:24px;margin-top:8px">
+    <div class="section-title" style="margin-bottom:16px">Informações da Conta</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="info-item">
+        <div class="info-label">Email / Telefone</div>
+        <div class="info-value">${currentUser?.email||'—'}</div>
+      </div>
+      <div class="info-item">
+        <div class="info-label">Membro desde</div>
+        <div class="info-value">${currentUser?.metadata?.creationTime ? new Date(currentUser.metadata.creationTime).toLocaleDateString('pt-BR') : '—'}</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+// ===== SETTINGS =====
+function renderSettings() {
+  document.getElementById('page-content').innerHTML = `
+<div class="page" style="max-width:600px;margin:0 auto">
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <div class="glass-card" style="padding:24px">
+      <div class="section-title" style="margin-bottom:16px">⚙️ Preferências</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:14px;font-weight:500">Idioma</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Idioma da interface</div>
+        </div>
+        <select class="input" style="max-width:150px">
+          <option>Português</option><option>English</option><option>Español</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0">
+        <div>
+          <div style="font-size:14px;font-weight:500">Moeda</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Para cálculo de valores</div>
+        </div>
+        <select class="input" style="max-width:150px">
+          <option>BRL (R$)</option><option>USD ($)</option><option>EUR (€)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding:24px">
+      <div class="section-title" style="margin-bottom:16px">📁 Dados</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-secondary w-full" onclick="exportCollection('json')">📤 Exportar Coleção (JSON)</button>
+        <button class="btn btn-secondary w-full" onclick="exportCollection('csv')">📄 Exportar CSV</button>
+        <button class="btn btn-secondary w-full" onclick="importCollection()">📥 Importar Coleção</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="processImport(event)">
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding:24px">
+      <div class="section-title" style="margin-bottom:16px">🤖 Scanner IA</div>
+      <div class="info-item">
+        <div class="info-label">Modelo IA</div>
+        <div class="info-value">Gemini 1.5 Flash</div>
+      </div>
+      <div class="info-item" style="margin-top:8px">
+        <div class="info-label">Limite de Confiança</div>
+        <div class="info-value">90% (confirmação manual abaixo)</div>
+      </div>
+    </div>
+
+    <div class="glass-card" style="padding:24px">
+      <div class="section-title" style="margin-bottom:16px">📱 Sobre</div>
+      <div class="info-item">
+        <div class="info-label">Versão</div>
+        <div class="info-value">CardDex v1.0.0</div>
+      </div>
+      <div class="info-item" style="margin-top:8px">
+        <div class="info-label">Firebase</div>
+        <div class="info-value">carddex-br • Firestore + Storage</div>
+      </div>
+    </div>
+
+    <button class="btn btn-danger w-full" onclick="doLogout()">🚪 Sair da Conta</button>
+  </div>
+</div>`;
+  window.importCollection = () => document.getElementById('import-file').click();
+  window.processImport = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const text = await file.text();
+    try {
+      const data = JSON.parse(text);
+      if (Array.isArray(data)) {
+        showToast(`Importando ${data.length} cartas...`, 'info');
+        let count = 0;
+        for (const card of data) {
+          try {
+            await addDoc(collection(db, 'colecao'), { ...card, uid: currentUser.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+            count++;
+          } catch {}
+        }
+        showToast(`${count} cartas importadas!`, 'success');
+      } else showToast('Formato inválido', 'error');
+    } catch { showToast('Erro ao ler arquivo', 'error'); }
+  };
+}
+
+// ===== EXPORT =====
+function exportCollection(format) {
+  if (format === 'json') {
+    const data = collectionData.map(({ id, ...c }) => c);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, `carddex_colecao_${new Date().toISOString().slice(0,10)}.json`);
+  } else if (format === 'csv') {
+    const headers = ['Nome','Número','Coleção','Tipo','Raridade','Condição','Quantidade','Preço Pago','Preço Venda','Idioma','HP','Versão'];
+    const rows = collectionData.map(c => [c.nome,c.numero,c.colecao,c.tipo,c.raridade,c.condicao,c.quantidade,c.precoPago,c.precoVenda,c.idioma,c.hp,c.versao].map(v => `"${v||''}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    downloadBlob(blob, `carddex_colecao_${new Date().toISOString().slice(0,10)}.csv`);
+  }
+  showToast('Exportação concluída!', 'success');
+}
+
+function downloadBlob(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename; a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ===== GLOBAL SEARCH =====
+function globalSearch(q) {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    if (q.length > 1) {
+      searchQuery = q;
+      navigate('collection');
+    }
+  }, 400);
+}
+
+// ===== MODAL =====
+function closeModal() {
+  document.getElementById('modal-container').innerHTML = '';
+}
+
+// ===== TOAST =====
+function showToast(msg, type = 'info') {
+  const icons = { success:'✓', error:'✕', info:'ℹ', warning:'⚠' };
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ'}</span><span class="toast-msg">${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity='0'; toast.style.transform='translateX(100%)'; toast.style.transition='all 0.3s ease'; setTimeout(() => toast.remove(), 300); }, 3500);
+}
+window.showToast = showToast;
+
+// ===== RESPONSIVE =====
+window.addEventListener('resize', () => {
+  if (window.innerWidth >= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+  }
+});
+
+// Hide loading after 1s fallback
+setTimeout(() => { document.getElementById('loading-screen').classList.add('hidden'); }, 3000);
+</script>
+</body>
+</html>
