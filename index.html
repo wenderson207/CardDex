@@ -1302,7 +1302,15 @@ function getRarityLabel(r) {
 }
 
 function getTypeEmoji(tipo) {
-  const t = {'Fire':'🔥','Water':'💧','Grass':'🌿','Electric':'⚡','Psychic':'🔮','Dark':'🌑','Metal':'⚙️','Dragon':'🐉','Fairy':'🌸','Fighting':'🥊','Colorless':'⬜'};
+  const t = {
+    fire:'🔥', water:'💧', grass:'🌿', lightning:'⚡',
+    psychic:'🟣', darkness:'⚫', metal:'⚙️', fighting:'🟠',
+    dragon:'🐉', colorless:'⚪', none:'⭐',
+    // legado (cartas antigas)
+    Fire:'🔥', Water:'💧', Grass:'🌿', Electric:'⚡',
+    Psychic:'🟣', Dark:'⚫', Metal:'⚙️', Fighting:'🟠',
+    Dragon:'🐉', Colorless:'⚪', Fairy:'🌸'
+  };
   return t[tipo] || '🃏';
 }
 
@@ -1401,6 +1409,7 @@ function captureCamera() {
   canvas.toBlob(blob => {
     stopCamera();
     const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
+    window._pendingImgFile = file;
     processImageFile(file);
   }, 'image/jpeg', 0.9);
 }
@@ -1755,21 +1764,37 @@ async function duplicateCard(cardId) {
 // ===== MANUAL ADD / EDIT =====
 function openAddCardManual(prefill = {}) {
   const isEdit = !!prefill.id;
+
   const raridades = [
-    { v:'common',              l:'Comum' },
-    { v:'uncommon',            l:'Incomum' },
-    { v:'rare',                l:'Rara' },
-    { v:'double_rare',         l:'Dupla Rara' },
-    { v:'illustration_rare',   l:'Rara Ilustrada' },
-    { v:'special_illustration_rare', l:'Rara Ilustrada Especial' },
-    { v:'hyper_rare',          l:'Hyper Rara' },
-    { v:'gold',                l:'Gold' },
-    { v:'rainbow',             l:'Rainbow' },
-    { v:'promo',               l:'Promo' },
-    { v:'ace_spec',            l:'Ace Spec' },
+    { v:'common',                    l:'● Comum' },
+    { v:'uncommon',                  l:'♦ Incomum' },
+    { v:'rare',                      l:'★ Rara' },
+    { v:'rare_holo',                 l:'★ Rara Holográfica' },
+    { v:'double_rare',               l:'★★ Dupla Rara' },
+    { v:'illustration_rare',         l:'⭐⭐ Ilustração Rara' },
+    { v:'special_illustration_rare', l:'★★★ Ilustração Especial' },
+    { v:'ultra_rare',                l:'✨ Ultra Rara' },
+    { v:'hyper_rare',                l:'🟨 Hiper Rara (Gold)' },
+    { v:'ace_spec',                  l:'ACE SPEC' },
+    { v:'promo',                     l:'PROMO Promocional' },
   ];
-  const tipos = ['Fire','Water','Grass','Electric','Psychic','Dark','Metal','Dragon','Fairy','Fighting','Colorless'];
+
+  const tipos = [
+    { v:'colorless', l:'⚪ Incolor' },
+    { v:'fire',      l:'🔥 Fogo' },
+    { v:'water',     l:'💧 Água' },
+    { v:'grass',     l:'🌿 Grama' },
+    { v:'lightning', l:'⚡ Elétrico' },
+    { v:'psychic',   l:'🟣 Psíquico' },
+    { v:'darkness',  l:'⚫ Escuridão' },
+    { v:'metal',     l:'⚙️ Metal' },
+    { v:'fighting',  l:'🟠 Lutador' },
+    { v:'dragon',    l:'🐉 Dragão' },
+    { v:'none',      l:'⭐ Sem tipo / Especial' },
+  ];
+
   const idiomas = ['Português','Inglês','Japonês','Espanhol'];
+
   const condicoes = [
     { v:'Mint',    l:'Mint — Perfeita' },
     { v:'NM',      l:'NM — Quase Perfeita' },
@@ -1778,18 +1803,27 @@ function openAddCardManual(prefill = {}) {
     { v:'HP',      l:'HP — Muito Jogada' },
     { v:'Damaged', l:'Danificada' },
   ];
+
   const versoes = [
-    { v:'Normal',               l:'Normal' },
-    { v:'Reverse Holo',         l:'Reverse Holo' },
-    { v:'Holo',                 l:'Holo' },
-    { v:'Full Art',             l:'Full Art' },
-    { v:'Alternate Art',        l:'Arte Alternativa' },
-    { v:'Secret Rare',          l:'Secret Rare' },
-    { v:'Gold',                 l:'Gold' },
-    { v:'Rainbow',              l:'Rainbow' },
-    { v:'Illustration Rare',    l:'Rara Ilustrada' },
-    { v:'Promo',                l:'Promo' },
+    { v:'Normal',            l:'Normal' },
+    { v:'Reverse Holo',      l:'Reverse Holo' },
+    { v:'Holo',              l:'Holo' },
+    { v:'Full Art',          l:'Full Art' },
+    { v:'Alternate Art',     l:'Arte Alternativa' },
+    { v:'Secret Rare',       l:'Secret Rare' },
+    { v:'Gold',              l:'Gold' },
+    { v:'Rainbow',           l:'Rainbow' },
+    { v:'Illustration Rare', l:'Rara Ilustrada' },
+    { v:'Promo',             l:'Promo' },
   ];
+
+  // Preview da imagem já existente (edição)
+  const imgPreviewHtml = prefill.imagemUrl
+    ? `<div id="img-preview-wrap" style="margin-bottom:8px">
+        <img src="${prefill.imagemUrl}" style="height:80px;border-radius:var(--radius-md);object-fit:cover">
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">Imagem atual — selecione outra para substituir</div>
+       </div>`
+    : `<div id="img-preview-wrap"></div>`;
 
   const html = `
 <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -1798,6 +1832,25 @@ function openAddCardManual(prefill = {}) {
     <div class="modal-title">${isEdit ? 'Editar' : 'Adicionar'} Carta</div>
     <button class="modal-close" onclick="closeModal()">✕</button>
   </div>
+
+  <div class="form-group" style="margin-bottom:20px">
+    <label class="form-label">📷 Foto da Carta</label>
+    ${imgPreviewHtml}
+    <div id="img-drop-zone" style="
+      border:2px dashed var(--border);border-radius:var(--radius-md);
+      padding:20px;text-align:center;cursor:pointer;transition:var(--transition);
+      background:var(--bg-secondary);"
+      onclick="document.getElementById('f-imagem').click()"
+      ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+      ondragleave="this.style.borderColor=''"
+      ondrop="handleImgDrop(event)">
+      <div style="font-size:28px;margin-bottom:6px">🃏</div>
+      <div style="font-size:13px;font-weight:500">Clique ou arraste a foto aqui</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">JPG, PNG, WEBP</div>
+    </div>
+    <input type="file" id="f-imagem" accept="image/*" style="display:none" onchange="previewImg(event)">
+  </div>
+
   <div class="form-grid">
     <div class="form-group">
       <label class="form-label">Nome *</label>
@@ -1817,7 +1870,7 @@ function openAddCardManual(prefill = {}) {
     </div>
     <div class="form-group">
       <label class="form-label">Tipo</label>
-      <select id="f-tipo" class="input">${tipos.map(t => `<option ${prefill.tipo===t?'selected':''}>${t}</option>`).join('')}</select>
+      <select id="f-tipo" class="input">${tipos.map(t => `<option value="${t.v}" ${(prefill.tipo||'colorless')===t.v?'selected':''}>${t.l}</option>`).join('')}</select>
     </div>
     <div class="form-group">
       <label class="form-label">HP</label>
@@ -1825,15 +1878,15 @@ function openAddCardManual(prefill = {}) {
     </div>
     <div class="form-group">
       <label class="form-label">Raridade</label>
-      <select id="f-raridade" class="input">${raridades.map(r => `<option value="${r.v}" ${prefill.raridade===r.v?'selected':''}>${r.l}</option>`).join('')}</select>
+      <select id="f-raridade" class="input">${raridades.map(r => `<option value="${r.v}" ${(prefill.raridade||'common')===r.v?'selected':''}>${r.l}</option>`).join('')}</select>
     </div>
     <div class="form-group">
       <label class="form-label">Versão</label>
-      <select id="f-versao" class="input">${versoes.map(v => `<option value="${v.v}" ${prefill.versao===v.v?'selected':''}>${v.l}</option>`).join('')}</select>
+      <select id="f-versao" class="input">${versoes.map(v => `<option value="${v.v}" ${(prefill.versao||'Normal')===v.v?'selected':''}>${v.l}</option>`).join('')}</select>
     </div>
     <div class="form-group">
       <label class="form-label">Condição</label>
-      <select id="f-condicao" class="input">${condicoes.map(c => `<option value="${c.v}" ${prefill.condicao===c.v?'selected':''}>${c.l}</option>`).join('')}</select>
+      <select id="f-condicao" class="input">${condicoes.map(c => `<option value="${c.v}" ${(prefill.condicao||'NM')===c.v?'selected':''}>${c.l}</option>`).join('')}</select>
     </div>
     <div class="form-group">
       <label class="form-label">Quantidade</label>
@@ -1852,10 +1905,6 @@ function openAddCardManual(prefill = {}) {
     <label class="form-label">Observações</label>
     <textarea id="f-observacoes" class="input">${prefill.observacoes||''}</textarea>
   </div>
-  <div class="form-group">
-    <label class="form-label">Imagem (Upload)</label>
-    <input type="file" id="f-imagem" accept="image/*" class="input">
-  </div>
   <div class="modal-footer">
     <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-primary" onclick="saveManualCard('${prefill.id||''}')">
@@ -1865,6 +1914,24 @@ function openAddCardManual(prefill = {}) {
 </div>
 </div>`;
   document.getElementById('modal-container').innerHTML = html;
+
+  // Handlers de imagem dentro do modal
+  window.previewImg = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    window._pendingImgFile = file;
+    const url = URL.createObjectURL(file);
+    document.getElementById('img-preview-wrap').innerHTML =
+      `<img src="${url}" style="height:100px;border-radius:var(--radius-md);object-fit:cover;margin-bottom:6px">
+       <div style="font-size:11px;color:var(--success)">✓ Imagem selecionada: ${file.name}</div>`;
+    document.getElementById('img-drop-zone').style.display = 'none';
+  };
+  window.handleImgDrop = (e) => {
+    e.preventDefault();
+    document.getElementById('img-drop-zone').style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file) window.previewImg({ target: { files: [file] } });
+  };
 }
 
 function editCard(cardId) {
@@ -1875,49 +1942,62 @@ function editCard(cardId) {
 async function saveManualCard(existingId) {
   const nome = document.getElementById('f-nome').value.trim();
   if (!nome) { showToast('Nome é obrigatório', 'error'); return; }
-  
-  const imgFile = document.getElementById('f-imagem').files[0];
+
+  // Pega o arquivo do preview ou do input direto
+  const imgFile = window._pendingImgFile || document.getElementById('f-imagem')?.files?.[0];
   let imagemUrl = existingId ? (collectionData.find(c=>c.id===existingId)?.imagemUrl||'') : '';
-  
+
+  const saveBtn = document.querySelector('.modal .btn-primary');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
+
   if (imgFile) {
     try {
+      showToast('Enviando imagem...', 'info');
       const storageRef = ref(storage, `colecao/${currentUser.uid}/${Date.now()}_${imgFile.name}`);
       await uploadBytes(storageRef, imgFile);
       imagemUrl = await getDownloadURL(storageRef);
-    } catch (e) { console.warn('Image upload failed:', e); }
+    } catch (e) {
+      console.warn('Image upload failed:', e);
+      showToast('Erro no upload da imagem — carta salva sem foto', 'warning');
+    }
   }
-  
+
   const cardData = {
-    nome, numero: document.getElementById('f-numero').value,
-    colecao: document.getElementById('f-colecao').value,
-    idioma: document.getElementById('f-idioma').value,
-    tipo: document.getElementById('f-tipo').value,
-    hp: document.getElementById('f-hp').value,
-    raridade: document.getElementById('f-raridade').value,
-    versao: document.getElementById('f-versao').value,
-    condicao: document.getElementById('f-condicao').value,
+    nome,
+    numero:    document.getElementById('f-numero').value.trim(),
+    colecao:   document.getElementById('f-colecao').value.trim(),
+    idioma:    document.getElementById('f-idioma').value,
+    tipo:      document.getElementById('f-tipo').value,
+    hp:        document.getElementById('f-hp').value,
+    raridade:  document.getElementById('f-raridade').value,
+    versao:    document.getElementById('f-versao').value,
+    condicao:  document.getElementById('f-condicao').value,
     quantidade: parseInt(document.getElementById('f-quantidade').value) || 1,
-    precoPago: parseFloat(document.getElementById('f-precoPago').value) || 0,
+    precoPago:  parseFloat(document.getElementById('f-precoPago').value) || 0,
     precoVenda: parseFloat(document.getElementById('f-precoVenda').value) || 0,
     observacoes: document.getElementById('f-observacoes').value,
-    imagemUrl, updatedAt: serverTimestamp()
+    imagemUrl,
+    updatedAt: serverTimestamp()
   };
-  
+
   try {
     if (existingId) {
       await updateDoc(doc(db, 'colecao', existingId), cardData);
-      showToast('Carta atualizada!', 'success');
+      showToast('✓ Carta atualizada!', 'success');
     } else {
       await addDoc(collection(db, 'colecao'), {
         ...cardData, uid: currentUser.uid, favorita: false, aVenda: false,
         historico: [{ acao: 'criado', data: new Date().toISOString(), nota: 'Adicionado manualmente' }],
         createdAt: serverTimestamp()
       });
-      showToast('Carta adicionada!', 'success');
+      showToast('✦ Carta adicionada!', 'success');
     }
+    window._pendingImgFile = null;
     closeModal();
   } catch (e) {
-    console.error(e); showToast('Erro ao salvar', 'error');
+    console.error('Save error:', e);
+    showToast('Erro ao salvar: ' + e.message, 'error');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = existingId ? '✓ Salvar Alterações' : '✦ Adicionar à Coleção'; }
   }
 }
 
@@ -2330,6 +2410,7 @@ function globalSearch(q) {
 
 // ===== MODAL =====
 function closeModal() {
+  window._pendingImgFile = null;
   document.getElementById('modal-container').innerHTML = '';
 }
 
