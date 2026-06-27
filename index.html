@@ -1367,10 +1367,30 @@ function scannerSelectMode(mode) {
     const el = document.getElementById(`opt-${m}`);
     if (el) el.style.borderColor = m === mode ? 'var(--accent)' : '';
   });
-  document.getElementById('scanner-zone-wrapper').classList.toggle('hidden', mode !== 'upload');
-  document.getElementById('camera-zone').classList.toggle('hidden', mode !== 'camera');
-  if (mode === 'camera') startCamera();
-  else stopCamera();
+
+  // Sempre reconstruir a zona da câmera para evitar tela preta
+  if (mode === 'camera') {
+    document.getElementById('scanner-zone-wrapper').classList.add('hidden');
+    const cameraZone = document.getElementById('camera-zone');
+    cameraZone.classList.remove('hidden');
+    cameraZone.innerHTML = `
+      <div class="camera-view">
+        <video id="camera-video" autoplay playsinline></video>
+        <div class="camera-overlay"><div class="camera-frame"></div></div>
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:10px">
+        📐 Encaixe a carta dentro do quadro
+      </div>
+      <div style="display:flex;gap:12px;margin-top:12px;justify-content:center">
+        <button class="btn btn-primary" onclick="captureCamera()">📸 Capturar</button>
+        <button class="btn btn-secondary" onclick="stopCamera();scannerSelectMode('upload')">✕ Cancelar</button>
+      </div>`;
+    startCamera();
+  } else {
+    stopCamera();
+    document.getElementById('scanner-zone-wrapper').classList.remove('hidden');
+    document.getElementById('camera-zone').classList.add('hidden');
+  }
 }
 
 async function startCamera() {
@@ -1403,14 +1423,33 @@ function stopCamera() {
 
 function captureCamera() {
   const video = document.getElementById('camera-video');
+  if (!video || !video.videoWidth) {
+    showToast('Câmera ainda carregando, tente novamente', 'warning');
+    return;
+  }
   const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
   canvas.getContext('2d').drawImage(video, 0, 0);
+  stopCamera();
+
   canvas.toBlob(blob => {
-    stopCamera();
     const file = new File([blob], 'capture.jpg', { type: 'image/jpeg' });
     window._pendingImgFile = file;
-    processImageFile(file);
+    window._currentFile = file;
+
+    // Mostrar preview diretamente na zona da câmera (sem esconder nada)
+    const cameraZone = document.getElementById('camera-zone');
+    const preview = canvas.toDataURL('image/jpeg', 0.9);
+    cameraZone.innerHTML = `
+      <div style="text-align:center">
+        <img src="${preview}" style="max-width:100%;max-height:360px;border-radius:var(--radius-lg);object-fit:contain;border:2px solid var(--accent)">
+        <div style="font-size:13px;color:var(--success);margin-top:10px;font-weight:600">✓ Foto capturada!</div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+          <button class="btn btn-primary" onclick="openAddCardManual()">✦ Preencher Dados da Carta</button>
+          <button class="btn btn-secondary btn-sm" onclick="scannerSelectMode('camera')">🔄 Tirar outra</button>
+        </div>
+      </div>`;
   }, 'image/jpeg', 0.9);
 }
 
@@ -1422,19 +1461,23 @@ async function handleFileUpload(event) {
 
 async function processImageFile(file) {
   window._currentFile = file;
+  window._pendingImgFile = file;
   const reader = new FileReader();
   reader.onload = (e) => {
     const preview = e.target.result;
-    // Show preview then open manual form with image already loaded
-    document.getElementById('scanner-zone-wrapper').innerHTML = `
-      <div class="scan-preview" style="text-align:center">
-        <img src="${preview}" style="max-height:280px;max-width:100%;border-radius:var(--radius-md);object-fit:contain" alt="Preview">
-        <div style="margin-top:12px;font-size:13px;color:var(--text-secondary)">Imagem carregada!</div>
-        <div style="margin-top:12px;display:flex;gap:10px;justify-content:center">
-          <button class="btn btn-primary" onclick="openAddCardManual()">✦ Preencher Dados da Carta</button>
-          <button class="btn btn-secondary btn-sm" onclick="renderScanner()">✕ Trocar imagem</button>
-        </div>
-      </div>`;
+    // Mostrar preview na zona de upload
+    const wrapper = document.getElementById('scanner-zone-wrapper');
+    if (wrapper) {
+      wrapper.innerHTML = `
+        <div style="text-align:center">
+          <img src="${preview}" style="max-height:320px;max-width:100%;border-radius:var(--radius-lg);object-fit:contain;border:2px solid var(--accent)">
+          <div style="font-size:13px;color:var(--success);margin-top:10px;font-weight:600">✓ Imagem carregada!</div>
+          <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+            <button class="btn btn-primary" onclick="openAddCardManual()">✦ Preencher Dados da Carta</button>
+            <button class="btn btn-secondary btn-sm" onclick="renderScanner()">🔄 Trocar imagem</button>
+          </div>
+        </div>`;
+    }
   };
   reader.readAsDataURL(file);
 }
