@@ -861,7 +861,7 @@ textarea.input{resize:vertical;min-height:80px}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, updateProfile } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, getDoc, setDoc, increment, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, onSnapshot, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 // ===== FIREBASE CONFIG =====
@@ -1011,50 +1011,68 @@ function getAuthError(code) {
 
 // ===== AUTH STATE =====
 onAuthStateChanged(auth, async (user) => {
-  document.getElementById('loading-screen').classList.add('hidden');
-  if (user) {
-    currentUser = user;
-    document.getElementById('auth-page').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    const initials = (user.displayName || 'CD').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
-    document.getElementById('user-avatar').textContent = initials;
-    document.getElementById('user-name').textContent = user.displayName || 'Colecionador';
-    await loadAllData();
-    navigate('dashboard');
-  } else {
-    currentUser = null;
+  try {
+    document.getElementById('loading-screen').classList.add('hidden');
+    if (user) {
+      currentUser = user;
+      document.getElementById('auth-page').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      const initials = (user.displayName || 'CD').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+      document.getElementById('user-avatar').textContent = initials;
+      document.getElementById('user-name').textContent = user.displayName || 'Colecionador';
+      try { await loadAllData(); } catch(e) { console.warn('loadAllData error:', e); }
+      navigate('dashboard');
+    } else {
+      currentUser = null;
+      document.getElementById('auth-page').classList.remove('hidden');
+      document.getElementById('app').classList.add('hidden');
+    }
+  } catch(e) {
+    console.error('Auth state error:', e);
+    document.getElementById('loading-screen').classList.add('hidden');
     document.getElementById('auth-page').classList.remove('hidden');
-    document.getElementById('app').classList.add('hidden');
   }
 });
 
 // ===== DATA LOADING =====
 async function loadAllData() {
   if (!currentUser) return;
+  const uid = currentUser.uid;
+
+  // Collection — onSnapshot sem orderBy para evitar índice composto obrigatório
   try {
-    const uid = currentUser.uid;
-    // Collection
-    const colQuery = query(collection(db, 'colecao'), where('uid', '==', uid), orderBy('createdAt', 'desc'));
+    const colQuery = query(collection(db, 'colecao'), where('uid', '==', uid));
     if (unsubscribeCollection) unsubscribeCollection();
     unsubscribeCollection = onSnapshot(colQuery, (snap) => {
-      collectionData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      collectionData = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const ta = a.createdAt?.seconds || 0;
+          const tb = b.createdAt?.seconds || 0;
+          return tb - ta;
+        });
       updateNavCounts();
       if (currentPage === 'dashboard') renderDashboard();
       if (currentPage === 'collection') renderCollection();
       if (currentPage === 'reports') renderReports();
+    }, (err) => {
+      console.warn('Collection snapshot error:', err);
     });
-    // Wishlist
-    const wQuery = query(collection(db, 'wishlist'), where('uid', '==', uid), orderBy('createdAt', 'desc'));
-    const wSnap = await getDocs(wQuery);
+  } catch(e) { console.warn('Collection query error:', e); }
+
+  // Wishlist
+  try {
+    const wSnap = await getDocs(query(collection(db, 'wishlist'), where('uid', '==', uid)));
     wishlistData = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // Sales
-    const sQuery = query(collection(db, 'vendas'), where('uid', '==', uid), orderBy('createdAt', 'desc'));
-    const sSnap = await getDocs(sQuery);
+  } catch(e) { console.warn('Wishlist query error:', e); wishlistData = []; }
+
+  // Sales
+  try {
+    const sSnap = await getDocs(query(collection(db, 'vendas'), where('uid', '==', uid)));
     salesData = sSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    updateNavCounts();
-  } catch (e) {
-    console.error('Error loading data:', e);
-  }
+  } catch(e) { console.warn('Sales query error:', e); salesData = []; }
+
+  updateNavCounts();
 }
 
 function updateNavCounts() {
