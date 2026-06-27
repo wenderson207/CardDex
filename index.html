@@ -889,6 +889,24 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
+
+// Helper de upload com fallback silencioso
+async function uploadImageSafe(file, path) {
+  try {
+    const storageRef = ref(storage, path);
+    const snap = await uploadBytes(storageRef, file);
+    return await getDownloadURL(snap.ref);
+  } catch(e) {
+    console.warn('Storage upload failed:', e.code, e.message);
+    // Converter para base64 como fallback local
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target.result);
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  }
+}
 const googleProvider = new GoogleAuthProvider();
 
 // ===== STATE =====
@@ -1512,15 +1530,11 @@ async function saveCard(cardData, extraData = {}) {
     } else {
       // Upload image if available
       let imagemUrl = cardData.imagemUrl || '';
-      if (window._currentFile || window._scanBase64) {
+      if (window._currentFile) {
         try {
           const fileToUpload = window._currentFile;
-          if (fileToUpload) {
-            const ext = fileToUpload.name.split('.').pop().toLowerCase() || 'jpg';
-            const storageRef = ref(storage, `colecao/${currentUser.uid}/${Date.now()}.${ext}`);
-            await uploadBytes(storageRef, fileToUpload);
-            imagemUrl = await getDownloadURL(storageRef);
-          }
+          const ext = fileToUpload.name.split('.').pop().toLowerCase().replace(/[^a-z]/g,'') || 'jpg';
+          imagemUrl = await uploadImageSafe(fileToUpload, `colecao/${currentUser.uid}/${Date.now()}.${ext}`);
         } catch (e) { console.warn('Image upload failed:', e); }
       }
       
@@ -2036,15 +2050,15 @@ async function saveManualCard(existingId) {
     if (imgFile && savedId) {
       try {
         showToast('Enviando foto...', 'info');
-        const ext = imgFile.name.split('.').pop().toLowerCase() || 'jpg';
-        const storageRef = ref(storage, `colecao/${currentUser.uid}/${savedId}.${ext}`);
-        await uploadBytes(storageRef, imgFile);
-        const url = await getDownloadURL(storageRef);
-        await updateDoc(doc(db, 'colecao', savedId), { imagemUrl: url, updatedAt: serverTimestamp() });
-        showToast('📷 Foto salva!', 'success');
+        const ext = imgFile.name.split('.').pop().toLowerCase().replace(/[^a-z]/g,'') || 'jpg';
+        const url = await uploadImageSafe(imgFile, `colecao/${currentUser.uid}/${savedId}.${ext}`);
+        if (url) {
+          await updateDoc(doc(db, 'colecao', savedId), { imagemUrl: url, updatedAt: serverTimestamp() });
+          showToast('📷 Foto salva!', 'success');
+        }
       } catch (e) {
         console.warn('Image upload failed:', e);
-        showToast('Carta salva, mas foto falhou: ' + e.message, 'warning');
+        showToast('Carta salva sem foto — verifique o Storage', 'warning');
       }
     }
 
