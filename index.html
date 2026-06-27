@@ -1516,7 +1516,8 @@ async function saveCard(cardData, extraData = {}) {
         try {
           const fileToUpload = window._currentFile;
           if (fileToUpload) {
-            const storageRef = ref(storage, `colecao/${currentUser.uid}/${Date.now()}_${fileToUpload.name}`);
+            const ext = fileToUpload.name.split('.').pop().toLowerCase() || 'jpg';
+            const storageRef = ref(storage, `colecao/${currentUser.uid}/${Date.now()}.${ext}`);
             await uploadBytes(storageRef, fileToUpload);
             imagemUrl = await getDownloadURL(storageRef);
           }
@@ -2035,7 +2036,8 @@ async function saveManualCard(existingId) {
     if (imgFile && savedId) {
       try {
         showToast('Enviando foto...', 'info');
-        const storageRef = ref(storage, `colecao/${currentUser.uid}/${savedId}_${imgFile.name}`);
+        const ext = imgFile.name.split('.').pop().toLowerCase() || 'jpg';
+        const storageRef = ref(storage, `colecao/${currentUser.uid}/${savedId}.${ext}`);
         await uploadBytes(storageRef, imgFile);
         const url = await getDownloadURL(storageRef);
         await updateDoc(doc(db, 'colecao', savedId), { imagemUrl: url, updatedAt: serverTimestamp() });
